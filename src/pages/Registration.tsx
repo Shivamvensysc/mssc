@@ -56,7 +56,7 @@ const years = Array.from({ length: 80 }, (_, i) => String(currentYear - i));
 export default function RegistrationForm() {
   const [captcha] = useState("1 8 1 8 M 7");
   const [formData, setFormData] = useState<RegistrationFormData>(initialFormData);
-  const [errors, setErrors] = useState<RegistrationFormErrors>({});
+  const [errors, setErrors] = useState<RegistrationFormErrors>(({}));
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -482,12 +482,12 @@ export default function RegistrationForm() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Name of Candidate</label>
+                                <label className="block font-label-md text-[18px] text-on-surface-variant">Name of Candidate</label>
                                 <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" placeholder="" />
                             </div>
                             
                             <div className="space-y-1">
-                              <label className="block font-label-md text-[14px] text-on-surface-variant">Date of Birth</label>
+                              <label className="block font-label-md text-[18px] text-on-surface-variant">Date of Birth</label>
                               <div className="grid grid-cols-3 gap-3">
                                 {[
                                   { label: 'Day', field: 'dobDay' as const, options: days },
@@ -516,7 +516,7 @@ export default function RegistrationForm() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Gender</label>
+                                <label className="block font-label-md text-[18px] text-on-surface-variant">Gender</label>
                                 <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
                                     <option value="">Select Gender</option>
                                     <option value="male">Male</option>
@@ -525,7 +525,7 @@ export default function RegistrationForm() {
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">District</label>
+                                <label className="block font-label-md text-[18px] text-on-surface-variant">District</label>
                                 <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
                                     <option value="">Select District</option>
                                     <option value="imphal_east">Imphal East</option>
@@ -533,11 +533,11 @@ export default function RegistrationForm() {
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Mobile No.</label>
+                                <label className="block font-label-md text-[18px] text-on-surface-variant">Mobile No.</label>
                                 <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="tel" placeholder="" />
                             </div>
                             <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Marital Status</label>
+                                <label className="block font-label-md text-[18px] text-on-surface-variant">Marital Status</label>
                                 <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
                                     <option value="">Select Status</option>
                                     <option value="unmarried">Unmarried</option>
@@ -545,53 +545,77 @@ export default function RegistrationForm() {
                                 </select>
                             </div>
                             <div className="space-y-1 md:col-span-2">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">E-mail Address</label>
+                                <label className="block font-label-md text-[18px] text-on-surface-variant">E-mail Address</label>
                                 <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="email" placeholder="" />
                             </div>
                         </div>
 
+                        {/* CHANGED: Replaced previous upload block with the requested stylized component zone */}
                         <div className="bg-surface-container-low rounded-xl p-6 flex flex-col items-center justify-between gap-6 border border-outline-variant/30">
-                            <div className="flex flex-col items-center gap-4 w-full">
-                                <div className="w-24 h-24 bg-surface-container rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
-                                    <span className="material-symbols-outlined text-outline text-4xl">no_photography</span>
-                                </div>
-                                <div className="w-full">
-                                    <label className="block font-label-sm text-[12px] text-on-surface-variant mb-1 text-center">Photo Upload</label>
-                                    <input type="file" className="text-xs w-full" />
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-center gap-4 w-full">
-                                <div className="w-24 h-12 bg-surface-container rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
-                                    <span className="material-symbols-outlined text-outline text-2xl">draw</span>
-                                </div>
-                                <div className="w-full">
-                                    <label className="block font-label-sm text-[12px] text-on-surface-variant mb-1 text-center">Signature Upload</label>
-                                    <input type="file" className="text-xs w-full" />
-                                </div>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant/70 text-center leading-tight">Only jpeg, jpg allowed. File size 20kb - 50kb.</p>
+                          <div className="w-full space-y-6">
+                              {/* Photo Upload Zone */}
+                              <div className="group relative">
+                                  <label className="block font-label-md text-label-md text-on-surface-variant mb-2 text-center">Upload Photo</label>
+                                  <div className="relative flex flex-col items-center justify-center p-6 border-2 border-dashed border-outline-variant/30 rounded-xl bg-white/30 hover:bg-white/50 hover:border-primary/50 transition-all cursor-pointer">
+                                      <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".jpg,.jpeg" />
+                                      <div className="flex flex-col items-center gap-2">
+                                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                              <span className="material-symbols-outlined">add_a_photo</span>
+                                          </div>
+                                          <div className="text-center">
+                                              <p className="font-label-sm text-primary">Click to upload</p>
+                                              <p className="text-[10px] text-on-surface-variant/70">or drag and drop</p>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              {/* Signature Upload Zone */}
+                              <div className="group relative">
+                                  <label className="block font-label-md text-label-md text-on-surface-variant mb-2 text-center">Upload Signature</label>
+                                  <div className="relative flex flex-col items-center justify-center p-4 border-2 border-dashed border-outline-variant/30 rounded-xl bg-white/30 hover:bg-white/50 hover:border-primary/50 transition-all cursor-pointer">
+                                      <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".jpg,.jpeg" />
+                                      <div className="flex flex-col items-center gap-2">
+                                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                              <span className="material-symbols-outlined">draw</span>
+                                          </div>
+                                          <div className="text-center">
+                                              <p className="font-label-sm text-primary">Click to upload</p>
+                                              <p className="text-[10px] text-on-surface-variant/70">or drag and drop</p>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              {/* Helper Text */}
+                              <div className="pt-2 border-t border-outline-variant/10">
+                                  <p className="text-[10px] text-on-surface-variant/70 text-center leading-tight italic">
+                                      Only jpeg, jpg allowed.<br />File size: 20kb - 50kb
+                                  </p>
+                              </div>
+                          </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                         <div className="space-y-1">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Father's Name</label>
+                            <label className="block font-label-md text-[18px] text-on-surface-variant">Father's Name</label>
                             <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" />
                         </div>
                         <div className="space-y-1">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Mother's Name</label>
+                            <label className="block font-label-md text-[18px] text-on-surface-variant">Mother's Name</label>
                             <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" />
                         </div>
                         <div className="md:col-span-2 space-y-1">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Identification Marks</label>
+                            <label className="block font-label-md text-[18px] text-on-surface-variant">Identification Marks</label>
                             <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" placeholder="e.g. A mole on the left cheek" />
                         </div>
                         <div className="space-y-1">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Permanent Address</label>
+                            <label className="block font-label-md text-[18px] text-on-surface-variant">Permanent Address</label>
                             <textarea className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 min-h-[100px] outline-none"></textarea>
                         </div>
                         <div className="space-y-1">
-                            <label className="flex items-center justify-between font-label-md text-[14px] text-on-surface-variant">
+                            <label className="flex items-center justify-between font-label-md text-[18px] text-on-surface-variant">
                                 Correspondence Address
                                 <span className="text-[11px] flex items-center gap-1 font-normal"><input type="checkbox" className="rounded text-primary focus:ring-primary w-3 h-3" /> Same as Permanent</span>
                             </label>
@@ -601,27 +625,34 @@ export default function RegistrationForm() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
                         <div className="space-y-2">
-                            <p className="font-label-md text-[14px] text-on-surface-variant">Are you State Gov. Employee?</p>
+                            <p className="font-label-md text-[18px] text-on-surface-variant">Are you State Gov. Employee?</p>
                             <div className="flex gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="gov_emp" className="text-primary" /> <span className="text-body-md">Yes</span></label>
                                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="gov_emp" className="text-primary" /> <span className="text-body-md">No</span></label>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <p className="font-label-md text-[14px] text-on-surface-variant">Sponsored by Employment Exch.?</p>
+                            <p className="font-label-md text-[18px] text-on-surface-variant">Sponsored by Employment Exch.?</p>
                             <div className="flex gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="sponsored" className="text-primary" /> <span className="text-body-md">Yes</span></label>
                                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="sponsored" className="text-primary" /> <span className="text-body-md">No</span></label>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <p className="font-label-md text-[14px] text-on-surface-variant">Nationality</p>
-                            <span className="inline-block px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full font-label-sm">Indian</span>
-                        </div>
+                        <div className="space-y-1">
+    <label className="block font-label-md text-[18px] text-on-surface-variant">Nationality</label>
+    <div className="relative">
+        <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none appearance-none font-body-md text-on-surface">
+            <option value="indian">Indian</option>
+            <option value="other">Other</option>
+        </select>
+        <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+    </div>
+</div>
                     </div>
                 </section>
 
                 {/* 2. Additional Documents */}
+                {/* CHANGED: Modified layout to fit the text label info display matching standard custom row upload placeholders */}
                 <section>
                     <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
                         <span className="material-symbols-outlined">description</span>
@@ -629,20 +660,32 @@ export default function RegistrationForm() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                         <div className="space-y-2">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Certificate of eligibility [PAN, Aadhaar, etc]</label>
-                            <input type="file" className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
+                            <label className="block font-label-md text-[18px] text-on-surface-variant">Certificate of eligibility [PAN, Aadhaar, etc]</label>
+                            <div className="relative flex items-center justify-between w-full h-[50px] px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface-variant/60 overflow-hidden">
+                                <span>No file chosen</span>
+                                <span className="px-3 py-1.5 bg-white border border-outline-variant/60 rounded text-xs text-on-surface font-medium pointer-events-none">Choose File</span>
+                                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                            </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Permanent Resident Certificate</label>
-                            <input type="file" className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
+                            <label className="block font-label-md text-[18px] text-on-surface-variant">Permanent Resident Certificate</label>
+                            <div className="relative flex items-center justify-between w-full h-[50px] px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface-variant/60 overflow-hidden">
+                                <span>No file chosen</span>
+                                <span className="px-3 py-1.5 bg-white border border-outline-variant/60 rounded text-xs text-on-surface font-medium pointer-events-none">Choose File</span>
+                                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                            </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Domicile Certificate</label>
-                            <input type="file" className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
+                            <label className="block font-label-md text-[18px] text-on-surface-variant">Domicile Certificate</label>
+                            <div className="relative flex items-center justify-between w-full h-[50px] px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface-variant/60 overflow-hidden">
+                                <span>No file chosen</span>
+                                <span className="px-3 py-1.5 bg-white border border-outline-variant/60 rounded text-xs text-on-surface font-medium pointer-events-none">Choose File</span>
+                                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Reservation Category</label>
+                                <label className="block font-label-md text-[18px] text-on-surface-variant">Reservation Category</label>
                                 <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
                                     <option value="">Select Category</option>
                                     <option value="ur">UR (General)</option>
@@ -652,7 +695,7 @@ export default function RegistrationForm() {
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">PH Status</label>
+                                <label className="block font-label-md text-[18px] text-on-surface-variant">PH Status</label>
                                 <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
                                     <option value="no">No</option>
                                     <option value="yes">Yes</option>
@@ -721,12 +764,20 @@ export default function RegistrationForm() {
                 {/* 4. Mandatory Uploads */}
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
-                        <label className="block font-label-md text-[14px] text-on-surface-variant">Marksheet of H.S.L.C./ Matriculate</label>
-                        <input type="file" className="w-full p-3 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
+                        <label className="block font-label-md text-[18px] text-on-surface-variant">Marksheet of H.S.L.C./ Matriculate</label>
+                        <div className="relative flex items-center justify-between w-full h-[50px] px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface-variant/60 overflow-hidden">
+                            <span>No file chosen</span>
+                            <span className="px-3 py-1.5 bg-white border border-outline-variant/60 rounded text-xs text-on-surface font-medium pointer-events-none">Choose File</span>
+                            <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="block font-label-md text-[14px] text-on-surface-variant">Provisional Certificate of H.S.L.C./ Matriculate</label>
-                        <input type="file" className="w-full p-3 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
+                        <label className="block font-label-md text-[18px] text-on-surface-variant">Provisional Certificate of H.S.L.C./ Matriculate</label>
+                        <div className="relative flex items-center justify-between w-full h-[50px] px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface-variant/60 overflow-hidden">
+                            <span>No file chosen</span>
+                            <span className="px-3 py-1.5 bg-white border border-outline-variant/60 rounded text-xs text-on-surface font-medium pointer-events-none">Choose File</span>
+                            <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        </div>
                     </div>
                 </section>
 
@@ -740,11 +791,11 @@ export default function RegistrationForm() {
                         <div className="flex items-center gap-4">
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input type="radio" name="has_exp" value="yes" className="text-primary focus:ring-primary" />
-                                <span className="font-label-md text-[14px] text-on-surface group-hover:text-primary transition-colors">Yes</span>
+                                <span className="font-label-md text-[18px] text-on-surface group-hover:text-primary transition-colors">Yes</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input defaultChecked type="radio" name="has_exp" value="no" className="text-primary focus:ring-primary" />
-                                <span className="font-label-md text-[14px] text-on-surface group-hover:text-primary transition-colors">No</span>
+                                <span className="font-label-md text-[18px] text-on-surface group-hover:text-primary transition-colors">No</span>
                             </label>
                         </div>
                     </div>
@@ -753,19 +804,23 @@ export default function RegistrationForm() {
                     {workExperienceRows.map((row, index) => (
                       <div key={index} className={`grid grid-cols-1 md:grid-cols-4 gap-4 items-end ${index > 0 ? 'mt-6 pt-6 border-t border-outline-variant/50' : ''}`}>
                           <div className="space-y-1">
-                              <label className="block font-label-sm text-[12px] text-on-surface-variant">Employer/Designation</label>
+                              <label className="block font-label-sm text-[18px] text-on-surface-variant">Employer/Designation</label>
                               <input className="w-full p-2 border border-outline-variant rounded bg-white text-sm outline-none" placeholder="Employer/Designation" type="text" />
                           </div>
                           <div className="space-y-1">
-                              <label className="block font-label-sm text-[12px] text-on-surface-variant">Service Period (Months)</label>
+                              <label className="block font-label-sm text-[18px] text-on-surface-variant">Service Period (Months)</label>
                               <input className="w-full p-2 border border-outline-variant rounded bg-white text-sm outline-none" placeholder="Total Months" type="number" />
                           </div>
                           <div className="space-y-1">
-                              <label className="block font-label-sm text-[12px] text-on-surface-variant">Upload Certificate</label>
-                              <input type="file" className="w-full p-1.5 border border-outline-variant rounded bg-white text-xs outline-none" />
+                              <label className="block font-label-sm text-[18px] text-on-surface-variant">Upload Certificate</label>
+                              <div className="relative flex items-center justify-between w-full h-[38px] px-3 bg-white border border-outline-variant rounded text-xs text-on-surface-variant/60 overflow-hidden">
+                                  <span>No file chosen</span>
+                                  <span className="px-2 py-1 bg-surface-container border border-outline-variant/40 rounded text-[10px] text-on-surface font-medium pointer-events-none">Choose File</span>
+                                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                              </div>
                           </div>
                           <div className="space-y-1">
-                              <label className="block font-label-sm text-[12px] text-on-surface-variant">Reason of Leaving</label>
+                              <label className="block font-label-sm text-[18px] text-on-surface-variant">Reason of Leaving</label>
                               <input className="w-full p-2 border border-outline-variant rounded bg-white text-sm outline-none" placeholder="Remark" type="text" />
                           </div>
                       </div>
@@ -774,8 +829,8 @@ export default function RegistrationForm() {
                     <button 
                         type="button" 
                         onClick={() => setWorkExperienceRows([...workExperienceRows, workExperienceRows.length + 1])}
-                        className="mt-6 px-4 py-2 border border-primary text-primary rounded-lg font-label-sm text-[12px] flex items-center gap-2 hover:bg-primary/5 transition-all"
-                    >
+                        className="mt-6 border border-primary text-primary bg-white px-8 py-4 rounded-full font-label-md text-[14px] shadow-lg hover:shadow-xl hover:-translate-y-1 hover:bg-primary/5 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
                         <span className="material-symbols-outlined text-sm">add</span>
                         Add More
                     </button>
@@ -786,7 +841,7 @@ export default function RegistrationForm() {
                     
                     {/* UPDATED: Fixed Captcha Layout */}
                     <div className="w-full max-w-lg space-y-4">
-                        <label className="block font-label-md text-[14px] text-on-surface-variant text-center">Security Verification</label>
+                        <label className="block font-label-md text-[18px] text-on-surface-variant text-center">Security Verification</label>
                         <div className="flex flex-row justify-center gap-4 items-center">
                             <div className="bg-surface-container rounded-lg p-2 border border-outline-variant flex items-center justify-center shrink-0 overflow-hidden">
                                 <div className="h-12 w-32 bg-white flex items-center justify-center font-bold tracking-widest text-on-surface-variant select-none border border-outline-variant/30 italic" style={{ fontFamily: 'serif' }}>
