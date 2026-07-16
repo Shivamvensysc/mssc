@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Footer from '../layout/Footer';
 import Header from '../layout/Header';
+import { getDistricts, getCategories } from '../api/registrationApi'; // Adjust import path as needed
+import { sendOtp, verifyOtp, resendOtp } from '../auth/cognito'; // Adjust import path as needed
+import {
+  registrationSchema,
+  otpSchema,
+  flattenZodErrors,
+  days,
+  months,
+  years,
+} from '../schemas/registrationSchema'; // Adjust import path as needed
 
 interface RegistrationFormData {
   name: string;
@@ -22,8 +34,19 @@ interface RegistrationFormData {
   govEmployee: string;
 }
 
-interface RegistrationFormErrors {
-  mobile?: string;
+type RegistrationFormErrors = Partial<Record<keyof RegistrationFormData, string>>;
+
+interface District {
+  districtId: number;
+  stateId: number;
+  districtName: string;
+  isActive: boolean;
+}
+
+interface Category {
+  value: number;
+  label: string;
+  subCategories: any[];
 }
 
 const initialFormData: RegistrationFormData = {
@@ -45,75 +68,237 @@ const initialFormData: RegistrationFormData = {
   govEmployee: '',
 };
 
-const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
-const months = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 80 }, (_, i) => String(currentYear - i));
+// Simple visual security-code generator for the captcha widget.
+const generateCaptcha = (): string => {
+  const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  const out: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    out.push(chars[Math.floor(Math.random() * chars.length)]);
+  }
+  return out.join(' ');
+};
+
+/** Small helper so every field renders its inline error the same way. */
+const FieldError = ({ message }: { message?: string }) =>
+  message ? <p className="text-error font-label-sm text-[12px] mt-1">{message}</p> : null;
 
 export default function RegistrationForm() {
-  const [captcha] = useState("1 8 1 8 M 7");
+  const [captcha, setCaptcha] = useState<string>(generateCaptcha);
   const [formData, setFormData] = useState<RegistrationFormData>(initialFormData);
-<<<<<<< HEAD
   const [errors, setErrors] = useState<RegistrationFormErrors>({});
-=======
-  const [errors, setErrors] = useState<RegistrationFormErrors>(({}));
->>>>>>> Workspace01
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
   const [currentStep, setCurrentStep] = useState(1);
-  
-  // ADDED: State to track dynamic work experience rows
   const [workExperienceRows, setWorkExperienceRows] = useState([1]);
+
+  // State for API data
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState({
+    districts: false,
+    categories: false
+  });
+  const [error, setError] = useState({
+    districts: '',
+    categories: ''
+  });
+
+  // ---- Cognito OTP verification state ----
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [otpError, setOtpError] = useState<string | undefined>(undefined);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Fetch districts and categories on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch districts
+      setLoading(prev => ({ ...prev, districts: true }));
+      try {
+        const districtsData = await getDistricts();
+        if (districtsData.success) {
+          setDistricts(districtsData.data);
+          setError(prev => ({ ...prev, districts: '' }));
+        } else {
+          setError(prev => ({ ...prev, districts: 'Failed to load districts' }));
+        }
+      } catch (err) {
+        setError(prev => ({ ...prev, districts: 'Failed to load districts' }));
+        console.error('Error fetching districts:', err);
+      } finally {
+        setLoading(prev => ({ ...prev, districts: false }));
+      }
+
+      // Fetch categories
+      setLoading(prev => ({ ...prev, categories: true }));
+      try {
+        const categoriesData = await getCategories();
+        if (categoriesData.success) {
+          setCategories(categoriesData.data);
+          setError(prev => ({ ...prev, categories: '' }));
+        } else {
+          setError(prev => ({ ...prev, categories: 'Failed to load categories' }));
+        }
+      } catch (err) {
+        setError(prev => ({ ...prev, categories: 'Failed to load categories' }));
+        console.error('Error fetching categories:', err);
+      } finally {
+        setLoading(prev => ({ ...prev, categories: false }));
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Countdown for the "Resend code" button.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setFormData((prev) => ({ ...prev, [name]: checked }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const getMobileHint = (value: string): string | undefined => {
+    if (!value) return undefined;
+    if (value.startsWith('0') || value.startsWith('+91') || value.startsWith('91')) {
+      return "Do not prefix '0' or '+91' before the mobile no.";
+    }
+    if (!/^\d{10}$/.test(value)) {
+      return 'Enter a valid 10-digit mobile number.';
+    }
+    return undefined;
   };
 
   const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, mobile: value }));
+    setErrors((prev) => ({ ...prev, mobile: getMobileHint(value) }));
+  };
 
-    if (value === '') {
-      setErrors((prev) => ({ ...prev, mobile: undefined }));
-    } else if (value.startsWith('0') || value.startsWith('+91') || value.startsWith('91')) {
-      setErrors((prev) => ({ ...prev, mobile: "Do not prefix '0' or '+91' before the mobile no." }));
-    } else if (!/^\d{10}$/.test(value)) {
-      setErrors((prev) => ({ ...prev, mobile: 'Enter a valid 10-digit mobile number.' }));
-    } else {
-      setErrors((prev) => ({ ...prev, mobile: undefined }));
+  const regenerateCaptcha = () => {
+    setCaptcha(generateCaptcha());
+    setFormData((prev) => ({ ...prev, captchaInput: '' }));
+    setErrors((prev) => ({ ...prev, captchaInput: undefined }));
+  };
+
+  /** Step 1: validate with Zod, check the captcha, then register the candidate in Cognito. */
+  const handleStep1Submit = async () => {
+    const result = registrationSchema.safeParse(formData);
+
+    if (!result.success) {
+      setErrors(flattenZodErrors(result.error));
+      toast.error('Please fix the highlighted fields before continuing.');
+      return;
+    }
+
+    const normalizedCaptcha = captcha.replace(/\s+/g, '').toUpperCase();
+    const normalizedInput = formData.captchaInput.replace(/\s+/g, '').toUpperCase();
+    if (normalizedCaptcha !== normalizedInput) {
+      setErrors((prev) => ({ ...prev, captchaInput: 'Security code does not match. Please try again.' }));
+      toast.error('Security code does not match. Please try again.');
+      regenerateCaptcha();
+      return;
+    }
+
+    setErrors({});
+    setIsSubmitting(true);
+    try {
+      await sendOtp(result.data);
+      toast.success('OTP sent! Please check your email to verify your account.');
+      setOtpValue('');
+      setOtpError(undefined);
+      setShowOtpModal(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong while registering. Please try again.';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (currentStep === 1) {
+  const handleVerifyOtp = async () => {
+    const result = otpSchema.safeParse({ otp: otpValue });
+    if (!result.success) {
+      setOtpError(result.error.issues[0]?.message ?? 'Enter a valid code');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      await verifyOtp(formData.email, result.data.otp);
+      toast.success('Email verified successfully!');
+      setShowOtpModal(false);
+      setOtpValue('');
+      setOtpError(undefined);
       setCurrentStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid or expired code. Please try again.';
+      setOtpError(message);
+      toast.error(message);
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setIsResendingOtp(true);
+    try {
+      await resendOtp(formData.email);
+      toast.success('A new verification code has been sent to your email.');
+      setResendCooldown(30);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not resend the code. Please try again.';
+      toast.error(message);
+    } finally {
+      setIsResendingOtp(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (currentStep === 1) {
+      await handleStep1Submit();
       return;
     }
 
     setIsSubmitting(true);
-    console.log('Final Application submitted:', formData);
-    setTimeout(() => {
+    try {
+      // NOTE: Step 2 ("Application") fields are not yet wired to component state
+      // in this template — hook them up the same way Step 1 fields are before
+      // sending this to your application-submission API.
+      console.log('Final Application submitted:', formData);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      toast.success('Application submitted successfully!');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to submit application. Please try again.';
+      toast.error(message);
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   const stepNames = ['Registration', 'Application', 'Payment', 'Completed'];
 
   return (
     <div className="bg-background min-h-screen font-body-md text-on-surface">
-      
+
+      <ToastContainer position="top-right" autoClose={4000} newestOnTop pauseOnHover />
+
       <Header />
 
       {/* 2. Hero Section */}
@@ -161,7 +346,7 @@ export default function RegistrationForm() {
       {/* 3. Main Form Island */}
       <main className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop -mt-32 pb-24 relative z-20">
         <div className="bg-white shadow-island rounded-[16px] p-8 md:p-12 transition-transform duration-300 hover:shadow-xl">
-          <form className={currentStep === 1 ? "space-y-12" : ""} onSubmit={handleSubmit}>
+          <form className={currentStep === 1 ? "space-y-12" : ""} onSubmit={handleSubmit} noValidate>
             
             {/* ======================================================== */}
             {/* STEP 1: INITIAL REGISTRATION CONTENT                     */}
@@ -189,13 +374,13 @@ export default function RegistrationForm() {
                               value={opt}
                               checked={formData.citizen === opt}
                               onChange={handleInputChange}
-                              required
                               className="w-5 h-5 text-primary border-outline focus:ring-primary"
                             />
                             <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
                           </label>
                         ))}
                       </div>
+                      <FieldError message={errors.citizen} />
                     </div>
 
                     <div className="space-y-4">
@@ -209,13 +394,13 @@ export default function RegistrationForm() {
                               value={opt}
                               checked={formData.dialect === opt}
                               onChange={handleInputChange}
-                              required
                               className="w-5 h-5 text-primary border-outline focus:ring-primary"
                             />
                             <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
                           </label>
                         ))}
                       </div>
+                      <FieldError message={errors.dialect} />
                     </div>
 
                     <div className="space-y-4">
@@ -226,11 +411,11 @@ export default function RegistrationForm() {
                           name="residencyConfirmed"
                           checked={formData.residencyConfirmed}
                           onChange={handleCheckboxChange}
-                          required
                           className="w-5 h-5 text-primary border-outline rounded focus:ring-primary"
                         />
                         <span className="font-body-md text-on-surface group-hover:text-primary transition-colors">I confirm residency eligibility</span>
                       </label>
+                      <FieldError message={errors.residencyConfirmed} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -241,7 +426,6 @@ export default function RegistrationForm() {
                             name="gender"
                             value={formData.gender}
                             onChange={handleInputChange}
-                            required
                             className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           >
                             <option value="">Please Select</option>
@@ -250,6 +434,7 @@ export default function RegistrationForm() {
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                         </div>
+                        <FieldError message={errors.gender} />
                       </div>
                       <div>
                         <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Marital Status</label>
@@ -258,7 +443,6 @@ export default function RegistrationForm() {
                             name="maritalStatus"
                             value={formData.maritalStatus}
                             onChange={handleInputChange}
-                            required
                             className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           >
                             <option value="">Please Select</option>
@@ -267,6 +451,7 @@ export default function RegistrationForm() {
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                         </div>
+                        <FieldError message={errors.maritalStatus} />
                       </div>
                     </div>
 
@@ -277,17 +462,22 @@ export default function RegistrationForm() {
                           name="reservationCategory"
                           value={formData.reservationCategory}
                           onChange={handleInputChange}
-                          required
                           className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
+                          disabled={loading.categories}
                         >
-                          <option value="">Please Select</option>
-                          <option value="gen">General</option>
-                          <option value="obc">OBC</option>
-                          <option value="sc">SC</option>
-                          <option value="st">ST</option>
+                          <option value="">{loading.categories ? 'Loading...' : 'Please Select'}</option>
+                          {categories.map((category) => (
+                            <option key={category.value} value={category.label}>
+                              {category.label}
+                            </option>
+                          ))}
                         </select>
                         <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                       </div>
+                      {error.categories && (
+                        <p className="text-error font-label-sm text-[12px] mt-1">{error.categories}</p>
+                      )}
+                      <FieldError message={errors.reservationCategory} />
                     </div>
 
                     <div className="space-y-4">
@@ -301,7 +491,6 @@ export default function RegistrationForm() {
                               value={opt}
                               checked={formData.ph === opt}
                               onChange={handleInputChange}
-                              required
                               className="w-5 h-5 text-primary border-outline focus:ring-primary"
                             />
                             <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
@@ -311,6 +500,7 @@ export default function RegistrationForm() {
                       {formData.ph === 'Yes' && (
                         <p className="text-error font-label-sm text-[12px] italic">[Must have a minimum of 40% specified disability]</p>
                       )}
+                      <FieldError message={errors.ph} />
                     </div>
                   </div>
 
@@ -324,11 +514,11 @@ export default function RegistrationForm() {
                           name="name"
                           value={formData.name}
                           onChange={handleInputChange}
-                          required
                           className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           placeholder="Enter your full name"
                         />
                       </div>
+                      <FieldError message={errors.name} />
                     </div>
 
                     <div>
@@ -344,7 +534,6 @@ export default function RegistrationForm() {
                               name={item.field}
                               value={formData[item.field]}
                               onChange={handleInputChange}
-                              required
                               className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none text-on-surface-variant"
                             >
                               <option value="">{item.label}</option>
@@ -358,22 +547,20 @@ export default function RegistrationForm() {
                           </div>
                         ))}
                       </div>
+                      <FieldError message={errors.dobDay || errors.dobMonth || errors.dobYear} />
                     </div>
 
                     <div>
                       <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Mobile No.</label>
-                      {errors.mobile && (
-                        <p className="text-error font-label-sm text-[12px] mb-2">{errors.mobile}</p>
-                      )}
                       <input
                         type="tel"
                         name="mobile"
                         value={formData.mobile}
                         onChange={handleMobileChange}
-                        required
                         className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                         placeholder="Enter your mobile number"
                       />
+                      <FieldError message={errors.mobile} />
                       <p className="text-on-surface-variant/70 font-label-sm text-[12px] mt-2">[Please keep this Mobile No. active for receiving communications]</p>
                     </div>
 
@@ -384,11 +571,11 @@ export default function RegistrationForm() {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        required
                         className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                         placeholder="Enter your email address"
                       />
-                      <p className="text-on-surface-variant/70 font-label-sm text-[12px] mt-2">[Note: Please keep this Email ID active for the Recruitment process]</p>
+                      <FieldError message={errors.email} />
+                      <p className="text-on-surface-variant/70 font-label-sm text-[12px] mt-2">[Note: Please keep this Email ID active for the Recruitment process — your OTP is sent here]</p>
                     </div>
 
                     <div>
@@ -398,15 +585,22 @@ export default function RegistrationForm() {
                           name="district"
                           value={formData.district}
                           onChange={handleInputChange}
-                          required
                           className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
+                          disabled={loading.districts}
                         >
-                          <option value="">Please Select</option>
-                          <option value="imphal_east">Imphal East</option>
-                          <option value="imphal_west">Imphal West</option>
+                          <option value="">{loading.districts ? 'Loading...' : 'Please Select'}</option>
+                          {districts.map((district) => (
+                            <option key={district.districtId} value={district.districtName}>
+                              {district.districtName}
+                            </option>
+                          ))}
                         </select>
                         <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                       </div>
+                      {error.districts && (
+                        <p className="text-error font-label-sm text-[12px] mt-1">{error.districts}</p>
+                      )}
+                      <FieldError message={errors.district} />
                       <p className="text-on-surface-variant/70 font-label-sm text-[12px] mt-2">[Note: Select your district of residence]</p>
                     </div>
 
@@ -417,7 +611,13 @@ export default function RegistrationForm() {
                           <div className="px-3 py-1 bg-white flex items-center justify-center font-bold tracking-wide text-on-surface-variant select-none border border-outline-variant/30 italic font-serif whitespace-nowrap">
                             {captcha}
                           </div>
-                          <button type="button" className="material-symbols-outlined shrink-0 text-primary hover:rotate-180 transition-all duration-300 text-xl leading-none">refresh</button>
+                          <button
+                            type="button"
+                            onClick={regenerateCaptcha}
+                            className="material-symbols-outlined shrink-0 text-primary hover:rotate-180 transition-all duration-300 text-xl leading-none"
+                          >
+                            refresh
+                          </button>
                         </div>
                         <div className="relative w-full">
                           <input
@@ -425,12 +625,12 @@ export default function RegistrationForm() {
                             name="captchaInput"
                             value={formData.captchaInput}
                             onChange={handleInputChange}
-                            required
                             className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                             placeholder="Enter security code"
                           />
                         </div>
                       </div>
+                      <FieldError message={errors.captchaInput} />
                     </div>
 
                     <div className="space-y-4">
@@ -444,13 +644,13 @@ export default function RegistrationForm() {
                               value={opt}
                               checked={formData.govEmployee === opt}
                               onChange={handleInputChange}
-                              required
                               className="w-5 h-5 text-primary border-outline focus:ring-primary"
                             />
                             <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
                           </label>
                         ))}
                       </div>
+                      <FieldError message={errors.govEmployee} />
                     </div>
                   </div>
                 </div>
@@ -458,9 +658,10 @@ export default function RegistrationForm() {
                 <div className="flex flex-col items-center justify-center pt-2 border-t border-outline-variant/30">
                   <button
                     type="submit"
-                    className="primary-gradient text-white px-12 py-4 rounded-full font-label-md text-[14px] font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95"
+                    disabled={isSubmitting}
+                    className="primary-gradient text-white px-12 py-4 rounded-full font-label-md text-[14px] font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Proceed to Application
+                    {isSubmitting ? 'Registering...' : 'Proceed to Application'}
                   </button>
                   <p className="mt-6 text-on-surface-variant font-label-sm text-[12px] font-medium">
                     Already registered? <Link to="/login" className="text-primary font-bold hover:underline">Login here</Link>
@@ -468,7 +669,6 @@ export default function RegistrationForm() {
                 </div>
               </>
             )}
-
 
             {/* ======================================================== */}
             {/* STEP 2: DETAILED APPLICATION CONTENT                     */}
@@ -486,20 +686,12 @@ export default function RegistrationForm() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1">
-<<<<<<< HEAD
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Name of Candidate</label>
-=======
                                 <label className="block font-label-md text-[18px] text-on-surface-variant">Name of Candidate</label>
->>>>>>> Workspace01
                                 <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" placeholder="" />
                             </div>
                             
                             <div className="space-y-1">
-<<<<<<< HEAD
-                              <label className="block font-label-md text-[14px] text-on-surface-variant">Date of Birth</label>
-=======
                               <label className="block font-label-md text-[18px] text-on-surface-variant">Date of Birth</label>
->>>>>>> Workspace01
                               <div className="grid grid-cols-3 gap-3">
                                 {[
                                   { label: 'Day', field: 'dobDay' as const, options: days },
@@ -511,7 +703,6 @@ export default function RegistrationForm() {
                                       name={item.field}
                                       value={formData[item.field]}
                                       onChange={handleInputChange}
-                                      required
                                       className="w-full p-3 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all font-body-md outline-none text-on-surface-variant"
                                     >
                                       <option value="">{item.label}</option>
@@ -528,11 +719,7 @@ export default function RegistrationForm() {
                             </div>
 
                             <div className="space-y-1">
-<<<<<<< HEAD
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Gender</label>
-=======
                                 <label className="block font-label-md text-[18px] text-on-surface-variant">Gender</label>
->>>>>>> Workspace01
                                 <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
                                     <option value="">Select Gender</option>
                                     <option value="male">Male</option>
@@ -541,31 +728,25 @@ export default function RegistrationForm() {
                                 </select>
                             </div>
                             <div className="space-y-1">
-<<<<<<< HEAD
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">District</label>
-=======
                                 <label className="block font-label-md text-[18px] text-on-surface-variant">District</label>
->>>>>>> Workspace01
-                                <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
-                                    <option value="">Select District</option>
-                                    <option value="imphal_east">Imphal East</option>
-                                    <option value="imphal_west">Imphal West</option>
+                                <select 
+                                  className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none"
+                                  disabled={loading.districts}
+                                >
+                                    <option value="">{loading.districts ? 'Loading...' : 'Select District'}</option>
+                                    {districts.map((district) => (
+                                      <option key={district.districtId} value={district.districtName}>
+                                        {district.districtName}
+                                      </option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="space-y-1">
-<<<<<<< HEAD
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Mobile No.</label>
-                                <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="tel" placeholder="" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Marital Status</label>
-=======
                                 <label className="block font-label-md text-[18px] text-on-surface-variant">Mobile No.</label>
                                 <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="tel" placeholder="" />
                             </div>
                             <div className="space-y-1">
                                 <label className="block font-label-md text-[18px] text-on-surface-variant">Marital Status</label>
->>>>>>> Workspace01
                                 <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
                                     <option value="">Select Status</option>
                                     <option value="unmarried">Unmarried</option>
@@ -573,38 +754,12 @@ export default function RegistrationForm() {
                                 </select>
                             </div>
                             <div className="space-y-1 md:col-span-2">
-<<<<<<< HEAD
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">E-mail Address</label>
-=======
                                 <label className="block font-label-md text-[18px] text-on-surface-variant">E-mail Address</label>
->>>>>>> Workspace01
                                 <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="email" placeholder="" />
                             </div>
                         </div>
 
-<<<<<<< HEAD
-                        <div className="bg-surface-container-low rounded-xl p-6 flex flex-col items-center justify-between gap-6 border border-outline-variant/30">
-                            <div className="flex flex-col items-center gap-4 w-full">
-                                <div className="w-24 h-24 bg-surface-container rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
-                                    <span className="material-symbols-outlined text-outline text-4xl">no_photography</span>
-                                </div>
-                                <div className="w-full">
-                                    <label className="block font-label-sm text-[12px] text-on-surface-variant mb-1 text-center">Photo Upload</label>
-                                    <input type="file" className="text-xs w-full" />
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-center gap-4 w-full">
-                                <div className="w-24 h-12 bg-surface-container rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
-                                    <span className="material-symbols-outlined text-outline text-2xl">draw</span>
-                                </div>
-                                <div className="w-full">
-                                    <label className="block font-label-sm text-[12px] text-on-surface-variant mb-1 text-center">Signature Upload</label>
-                                    <input type="file" className="text-xs w-full" />
-                                </div>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant/70 text-center leading-tight">Only jpeg, jpg allowed. File size 20kb - 50kb.</p>
-=======
-                        {/* CHANGED: Replaced previous upload block with the requested stylized component zone */}
+                        {/* Photo and Signature Upload */}
                         <div className="bg-surface-container-low rounded-xl p-6 flex flex-col items-center justify-between gap-6 border border-outline-variant/30">
                           <div className="w-full space-y-6">
                               {/* Photo Upload Zone */}
@@ -648,31 +803,11 @@ export default function RegistrationForm() {
                                   </p>
                               </div>
                           </div>
->>>>>>> Workspace01
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                         <div className="space-y-1">
-<<<<<<< HEAD
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Father's Name</label>
-                            <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Mother's Name</label>
-                            <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" />
-                        </div>
-                        <div className="md:col-span-2 space-y-1">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Identification Marks</label>
-                            <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" placeholder="e.g. A mole on the left cheek" />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Permanent Address</label>
-                            <textarea className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 min-h-[100px] outline-none"></textarea>
-                        </div>
-                        <div className="space-y-1">
-                            <label className="flex items-center justify-between font-label-md text-[14px] text-on-surface-variant">
-=======
                             <label className="block font-label-md text-[18px] text-on-surface-variant">Father's Name</label>
                             <input className="w-full p-3 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" />
                         </div>
@@ -690,7 +825,6 @@ export default function RegistrationForm() {
                         </div>
                         <div className="space-y-1">
                             <label className="flex items-center justify-between font-label-md text-[18px] text-on-surface-variant">
->>>>>>> Workspace01
                                 Correspondence Address
                                 <span className="text-[11px] flex items-center gap-1 font-normal"><input type="checkbox" className="rounded text-primary focus:ring-primary w-3 h-3" /> Same as Permanent</span>
                             </label>
@@ -700,33 +834,19 @@ export default function RegistrationForm() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
                         <div className="space-y-2">
-<<<<<<< HEAD
-                            <p className="font-label-md text-[14px] text-on-surface-variant">Are you State Gov. Employee?</p>
-=======
                             <p className="font-label-md text-[18px] text-on-surface-variant">Are you State Gov. Employee?</p>
->>>>>>> Workspace01
                             <div className="flex gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="gov_emp" className="text-primary" /> <span className="text-body-md">Yes</span></label>
                                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="gov_emp" className="text-primary" /> <span className="text-body-md">No</span></label>
                             </div>
                         </div>
                         <div className="space-y-2">
-<<<<<<< HEAD
-                            <p className="font-label-md text-[14px] text-on-surface-variant">Sponsored by Employment Exch.?</p>
-=======
                             <p className="font-label-md text-[18px] text-on-surface-variant">Sponsored by Employment Exch.?</p>
->>>>>>> Workspace01
                             <div className="flex gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="sponsored" className="text-primary" /> <span className="text-body-md">Yes</span></label>
                                 <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="sponsored" className="text-primary" /> <span className="text-body-md">No</span></label>
                             </div>
                         </div>
-<<<<<<< HEAD
-                        <div className="space-y-2">
-                            <p className="font-label-md text-[14px] text-on-surface-variant">Nationality</p>
-                            <span className="inline-block px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full font-label-sm">Indian</span>
-                        </div>
-=======
                         <div className="space-y-1">
     <label className="block font-label-md text-[18px] text-on-surface-variant">Nationality</label>
     <div className="relative">
@@ -737,15 +857,10 @@ export default function RegistrationForm() {
         <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
     </div>
 </div>
->>>>>>> Workspace01
                     </div>
                 </section>
 
                 {/* 2. Additional Documents */}
-<<<<<<< HEAD
-=======
-                {/* CHANGED: Modified layout to fit the text label info display matching standard custom row upload placeholders */}
->>>>>>> Workspace01
                 <section>
                     <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
                         <span className="material-symbols-outlined">description</span>
@@ -753,22 +868,6 @@ export default function RegistrationForm() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                         <div className="space-y-2">
-<<<<<<< HEAD
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Certificate of eligibility [PAN, Aadhaar, etc]</label>
-                            <input type="file" className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Permanent Resident Certificate</label>
-                            <input type="file" className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="block font-label-md text-[14px] text-on-surface-variant">Domicile Certificate</label>
-                            <input type="file" className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">Reservation Category</label>
-=======
                             <label className="block font-label-md text-[18px] text-on-surface-variant">Certificate of eligibility [PAN, Aadhaar, etc]</label>
                             <div className="relative flex items-center justify-between w-full h-[50px] px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface-variant/60 overflow-hidden">
                                 <span>No file chosen</span>
@@ -795,21 +894,20 @@ export default function RegistrationForm() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="block font-label-md text-[18px] text-on-surface-variant">Reservation Category</label>
->>>>>>> Workspace01
-                                <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
-                                    <option value="">Select Category</option>
-                                    <option value="ur">UR (General)</option>
-                                    <option value="obc">OBC</option>
-                                    <option value="sc">SC</option>
-                                    <option value="st">ST</option>
+                                <select 
+                                  className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none"
+                                  disabled={loading.categories}
+                                >
+                                    <option value="">{loading.categories ? 'Loading...' : 'Select Category'}</option>
+                                    {categories.map((category) => (
+                                      <option key={category.value} value={category.label}>
+                                        {category.label}
+                                      </option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="space-y-1">
-<<<<<<< HEAD
-                                <label className="block font-label-md text-[14px] text-on-surface-variant">PH Status</label>
-=======
                                 <label className="block font-label-md text-[18px] text-on-surface-variant">PH Status</label>
->>>>>>> Workspace01
                                 <select className="w-full p-3 bg-white border border-outline-variant rounded-lg outline-none">
                                     <option value="no">No</option>
                                     <option value="yes">Yes</option>
@@ -878,14 +976,6 @@ export default function RegistrationForm() {
                 {/* 4. Mandatory Uploads */}
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
-<<<<<<< HEAD
-                        <label className="block font-label-md text-[14px] text-on-surface-variant">Marksheet of H.S.L.C./ Matriculate</label>
-                        <input type="file" className="w-full p-3 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="block font-label-md text-[14px] text-on-surface-variant">Provisional Certificate of H.S.L.C./ Matriculate</label>
-                        <input type="file" className="w-full p-3 bg-surface-container-low border border-outline-variant rounded-lg text-sm outline-none" />
-=======
                         <label className="block font-label-md text-[18px] text-on-surface-variant">Marksheet of H.S.L.C./ Matriculate</label>
                         <div className="relative flex items-center justify-between w-full h-[50px] px-4 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface-variant/60 overflow-hidden">
                             <span>No file chosen</span>
@@ -900,7 +990,6 @@ export default function RegistrationForm() {
                             <span className="px-3 py-1.5 bg-white border border-outline-variant/60 rounded text-xs text-on-surface font-medium pointer-events-none">Choose File</span>
                             <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                         </div>
->>>>>>> Workspace01
                     </div>
                 </section>
 
@@ -914,42 +1003,19 @@ export default function RegistrationForm() {
                         <div className="flex items-center gap-4">
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input type="radio" name="has_exp" value="yes" className="text-primary focus:ring-primary" />
-<<<<<<< HEAD
-                                <span className="font-label-md text-[14px] text-on-surface group-hover:text-primary transition-colors">Yes</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input defaultChecked type="radio" name="has_exp" value="no" className="text-primary focus:ring-primary" />
-                                <span className="font-label-md text-[14px] text-on-surface group-hover:text-primary transition-colors">No</span>
-=======
                                 <span className="font-label-md text-[18px] text-on-surface group-hover:text-primary transition-colors">Yes</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input defaultChecked type="radio" name="has_exp" value="no" className="text-primary focus:ring-primary" />
                                 <span className="font-label-md text-[18px] text-on-surface group-hover:text-primary transition-colors">No</span>
->>>>>>> Workspace01
                             </label>
                         </div>
                     </div>
                     
-                    {/* UPDATED: Dynamic Work Experience Rows mapped from state */}
+                    {/* Dynamic Work Experience Rows mapped from state */}
                     {workExperienceRows.map((row, index) => (
                       <div key={index} className={`grid grid-cols-1 md:grid-cols-4 gap-4 items-end ${index > 0 ? 'mt-6 pt-6 border-t border-outline-variant/50' : ''}`}>
                           <div className="space-y-1">
-<<<<<<< HEAD
-                              <label className="block font-label-sm text-[12px] text-on-surface-variant">Employer/Designation</label>
-                              <input className="w-full p-2 border border-outline-variant rounded bg-white text-sm outline-none" placeholder="Employer/Designation" type="text" />
-                          </div>
-                          <div className="space-y-1">
-                              <label className="block font-label-sm text-[12px] text-on-surface-variant">Service Period (Months)</label>
-                              <input className="w-full p-2 border border-outline-variant rounded bg-white text-sm outline-none" placeholder="Total Months" type="number" />
-                          </div>
-                          <div className="space-y-1">
-                              <label className="block font-label-sm text-[12px] text-on-surface-variant">Upload Certificate</label>
-                              <input type="file" className="w-full p-1.5 border border-outline-variant rounded bg-white text-xs outline-none" />
-                          </div>
-                          <div className="space-y-1">
-                              <label className="block font-label-sm text-[12px] text-on-surface-variant">Reason of Leaving</label>
-=======
                               <label className="block font-label-sm text-[18px] text-on-surface-variant">Employer/Designation</label>
                               <input className="w-full p-2 border border-outline-variant rounded bg-white text-sm outline-none" placeholder="Employer/Designation" type="text" />
                           </div>
@@ -967,7 +1033,6 @@ export default function RegistrationForm() {
                           </div>
                           <div className="space-y-1">
                               <label className="block font-label-sm text-[18px] text-on-surface-variant">Reason of Leaving</label>
->>>>>>> Workspace01
                               <input className="w-full p-2 border border-outline-variant rounded bg-white text-sm outline-none" placeholder="Remark" type="text" />
                           </div>
                       </div>
@@ -976,13 +1041,8 @@ export default function RegistrationForm() {
                     <button 
                         type="button" 
                         onClick={() => setWorkExperienceRows([...workExperienceRows, workExperienceRows.length + 1])}
-<<<<<<< HEAD
-                        className="mt-6 px-4 py-2 border border-primary text-primary rounded-lg font-label-sm text-[12px] flex items-center gap-2 hover:bg-primary/5 transition-all"
-                    >
-=======
                         className="mt-6 border border-primary text-primary bg-white px-8 py-4 rounded-full font-label-md text-[14px] shadow-lg hover:shadow-xl hover:-translate-y-1 hover:bg-primary/5 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
->>>>>>> Workspace01
                         <span className="material-symbols-outlined text-sm">add</span>
                         Add More
                     </button>
@@ -991,13 +1051,9 @@ export default function RegistrationForm() {
                 {/* 6. Final Actions */}
                 <div className="flex flex-col items-center justify-center pt-12 border-t border-outline-variant/30 space-y-8">
                     
-                    {/* UPDATED: Fixed Captcha Layout */}
+                    {/* Fixed Captcha Layout */}
                     <div className="w-full max-w-lg space-y-4">
-<<<<<<< HEAD
-                        <label className="block font-label-md text-[14px] text-on-surface-variant text-center">Security Verification</label>
-=======
                         <label className="block font-label-md text-[18px] text-on-surface-variant text-center">Security Verification</label>
->>>>>>> Workspace01
                         <div className="flex flex-row justify-center gap-4 items-center">
                             <div className="bg-surface-container rounded-lg p-2 border border-outline-variant flex items-center justify-center shrink-0 overflow-hidden">
                                 <div className="h-12 w-32 bg-white flex items-center justify-center font-bold tracking-widest text-on-surface-variant select-none border border-outline-variant/30 italic" style={{ fontFamily: 'serif' }}>
@@ -1040,6 +1096,76 @@ export default function RegistrationForm() {
           </form>
         </div>
       </main>
+
+      {/* ======================================================== */}
+      {/* Cognito OTP verification modal (shown after Step 1 submit) */}
+      {/* ======================================================== */}
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-2xl">mark_email_read</span>
+              </div>
+              <h3 className="text-xl font-bold text-on-surface">Verify your email</h3>
+              <p className="text-on-surface-variant text-sm">
+                Enter the 6-digit code sent to <span className="font-semibold">{formData.email}</span>
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={otpValue}
+                onChange={(e) => {
+                  setOtpValue(e.target.value.replace(/\D/g, ''));
+                  setOtpError(undefined);
+                }}
+                className="w-full text-center tracking-[0.5em] text-lg py-3 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                placeholder="------"
+              />
+              <FieldError message={otpError} />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleVerifyOtp}
+              disabled={isVerifyingOtp}
+              className="w-full primary-gradient text-white py-3 rounded-full font-label-md text-[14px] font-bold shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isVerifyingOtp ? 'Verifying...' : 'Verify & Continue'}
+            </button>
+
+            <div className="flex items-center justify-between text-sm">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={isResendingOtp || resendCooldown > 0}
+                className="text-primary font-semibold hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+              >
+                {resendCooldown > 0
+                  ? `Resend code in ${resendCooldown}s`
+                  : isResendingOtp
+                  ? 'Resending...'
+                  : 'Resend code'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOtpModal(false);
+                  setOtpValue('');
+                  setOtpError(undefined);
+                }}
+                className="text-on-surface-variant hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
