@@ -10,6 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+<<<<<<< HEAD
+=======
+    "amazon-cognito-identity-js": "^6.3.20",
+>>>>>>> Workspace01
     "lucide-react": "^1.24.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
