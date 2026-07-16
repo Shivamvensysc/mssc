@@ -1,3 +1,4 @@
+// //correct version of code 
 // import {
 //   CognitoUserPool,
 //   CognitoUser,
@@ -5,6 +6,7 @@
 //   AuthenticationDetails,
 // } from "amazon-cognito-identity-js";
 // import type { ISignUpResult, CognitoUserSession } from "amazon-cognito-identity-js";
+// import { months, type RegistrationFormValues } from "../schemas/registrationSchema"; // Adjust import path as needed
 
 // const poolData = {
 //   UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
@@ -12,25 +14,6 @@
 // };
 
 // export const userPool = new CognitoUserPool(poolData);
-
-// /** Shape of the fields we actually persist to Cognito (subset of the form's `data` state). */
-// export interface RegistrationFormData {
-//   applicantName: string;
-//   gender: string;
-//   isManipurResident: string;
-//   category: string;
-//   isPwD: string;
-//   isGovEmployee: string;
-//   nameOfPost: string;
-//   emailId: string;
-//   dobDay: string;
-//   dobMonth: string;
-//   dobYear: string;
-//   isCitizenOfIndia: string;
-//   motherTongue: string;
-//   maritalStatus: string;
-//   district: string;
-// }
 
 // export interface SendOtpResponse {
 //   userSub: string;
@@ -70,16 +53,15 @@
 //   "custom:select_district",
 // ] as const;
 
+// // The post applied for is fixed by this recruitment drive and isn't a form field,
+// // so it's sent as a constant rather than read off `data`.
+// const DEFAULT_POST_NAME = "Multi Tasking Staff (MTS)";
+
 // const pad2 = (v: string): string => v.padStart(2, "0");
 
-// /** true if all DOB parts are present and form a real calendar date */
-// const isValidDob = (day: string, month: string, year: string): boolean => {
-//   const d = parseInt(day, 10);
-//   const m = parseInt(month, 10);
-//   const y = parseInt(year, 10);
-//   if (!d || !m || !y) return false;
-//   const dt = new Date(y, m - 1, d);
-//   return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+// const monthNameToNumber = (monthName: string): number => {
+//   const idx = months.indexOf(monthName);
+//   return idx === -1 ? 0 : idx + 1;
 // };
 
 // /**
@@ -94,52 +76,58 @@
 //   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to < from) return null;
 
 //   let years = to.getFullYear() - from.getFullYear();
-//   let months = to.getMonth() - from.getMonth();
+//   let months2 = to.getMonth() - from.getMonth();
 //   let days = to.getDate() - from.getDate();
 
 //   if (days < 0) {
-//     months -= 1;
+//     months2 -= 1;
 //     days += new Date(to.getFullYear(), to.getMonth(), 0).getDate();
 //   }
-//   if (months < 0) {
+//   if (months2 < 0) {
 //     years -= 1;
-//     months += 12;
+//     months2 += 12;
 //   }
-//   return { years, months, days };
+//   return { years, months: months2, days };
 // };
 
 // /**
-//  * Maps form fields -> Cognito attributes.
+//  * Maps the Zod-validated registration form -> Cognito attributes.
 //  * Standard attributes are used where Cognito has a matching field
-//  * (email, name, birthdate); everything else goes out as a
+//  * (email, name, birthdate, phone_number); everything else goes out as a
 //  * `custom:` attribute that must already exist in the pool schema.
+//  *
+//  * `confirmMobile` / `confirmEmail` are frontend-only match checks (see
+//  * registrationSchema.ts) — they are intentionally NOT sent to Cognito.
+//  *
+//  * Because `data` is `RegistrationFormValues` (the output of
+//  * registrationSchema.parse/safeParse), every field here is guaranteed to be
+//  * present and already validated — no defensive fallback logic is needed.
 //  */
-// const buildAttributeList = (data: RegistrationFormData): CognitoUserAttribute[] => {
-//   const birthdate = isValidDob(data.dobDay, data.dobMonth, data.dobYear)
-//     ? `${data.dobYear}-${pad2(data.dobMonth)}-${pad2(data.dobDay)}`
-//     : "";
+// const buildAttributeList = (data: RegistrationFormValues): CognitoUserAttribute[] => {
+//   const monthNum = monthNameToNumber(data.dobMonth);
+//   const birthdate = monthNum ? `${data.dobYear}-${pad2(String(monthNum))}-${pad2(data.dobDay)}` : "";
 
 //   const attrs: Record<string, string> = {
 //     // standard attributes
-//     email: data.emailId,
-//     name: data.applicantName,
+//     email: data.email,
+//     name: data.name,
 //     birthdate,
+//     phone_number: `+91${data.mobile}`,
 
 //     // custom attributes — keys here must exactly match REQUIRED_CUSTOM_ATTRIBUTES
-//     "custom:post": data.nameOfPost,
-//     "custom:citizen_of_india": data.isCitizenOfIndia,
-//     "custom:mother_tongue": data.motherTongue,
-//     "custom:manipur_resident": data.isManipurResident,
+//     "custom:post": DEFAULT_POST_NAME,
+//     "custom:citizen_of_india": data.citizen,
+//     "custom:mother_tongue": data.dialect,
+//     "custom:manipur_resident": data.residencyConfirmed ? "Yes" : "No",
 //     "custom:gender": data.gender,
 //     "custom:marital_status": data.maritalStatus,
-//     "custom:reservation_category": data.category,
-//     "custom:is_pwd": data.isPwD,
-//     "custom:gov_employee": data.isGovEmployee,
+//     "custom:reservation_category": data.reservationCategory,
+//     "custom:is_pwd": data.ph,
+//     "custom:gov_employee": data.govEmployee,
 //     "custom:select_district": data.district,
 //   };
 
-//   // Cognito rejects attributes sent as an empty string, so drop blanks
-//   // (this also means truly-optional fields are fine unfilled).
+//   // Cognito rejects attributes sent as an empty string, so drop blanks.
 //   return Object.entries(attrs)
 //     .filter(([, value]) => value !== undefined && value !== null && value !== "")
 //     .map(([Name, Value]) => new CognitoUserAttribute({ Name, Value: String(Value) }));
@@ -157,7 +145,39 @@
 //   }
 // }
 
-// export const sendOtp = async (data: RegistrationFormData): Promise<SendOtpResponse> => {
+// /**
+//  * Turns Cognito's raw exception names into short, user-facing messages.
+//  * Falls back to the SDK's own message (or `fallback`) for anything not
+//  * explicitly mapped, so unexpected errors are never silently swallowed.
+//  */
+// const friendlyCognitoMessage = (err: unknown, fallback: string): string => {
+//   const name = (err as { name?: string } | null)?.name;
+//   switch (name) {
+//     case "CodeMismatchException":
+//       return "That verification code is incorrect. Please check and try again.";
+//     case "ExpiredCodeException":
+//       return "That verification code has expired. Please request a new one.";
+//     case "InvalidPasswordException":
+//       return "That password doesn't meet the requirements. Use at least 8 characters, including an uppercase letter, a lowercase letter, a number, and a special character.";
+//     case "LimitExceededException":
+//       return "Too many attempts. Please wait a few minutes and try again.";
+//     case "UserNotFoundException":
+//       return "We couldn't find an account for that email address.";
+//     case "NotAuthorizedException":
+//       return "This action isn't allowed right now. Please try registering again.";
+//     case "InvalidParameterException":
+//       return "Something about that request wasn't valid. Please check the details and try again.";
+//     default:
+//       return (err as { message?: string } | null)?.message || fallback;
+//   }
+// };
+
+// /**
+//  * Registers the candidate in Cognito (signUp) and triggers the email OTP.
+//  * `data` must already be validated by `registrationSchema` (see registrationSchema.ts) —
+//  * call `registrationSchema.parse(formData)` / `.safeParse(formData)` before calling this.
+//  */
+// export const sendOtp = async (data: RegistrationFormValues): Promise<SendOtpResponse> => {
 //   return new Promise((resolve, reject) => {
 //     const attributeList = buildAttributeList(data);
 
@@ -166,7 +186,7 @@
 //     // to the user and never reused.
 //     const temporaryPassword = Math.random().toString(36).slice(-16) + "@Temp123";
 
-//     userPool.signUp(data.emailId, temporaryPassword, attributeList, [], (err, result) => {
+//     userPool.signUp(data.email, temporaryPassword, attributeList, [], (err, result) => {
 //       if (err) {
 //         if (
 //           err.name === "InvalidParameterException" &&
@@ -184,7 +204,11 @@
 //           );
 //           return;
 //         }
-//         reject(err);
+//         if (err.name === "UsernameExistsException") {
+//           reject(new Error("An account with this email already exists. Please log in instead."));
+//           return;
+//         }
+//         reject(new Error(friendlyCognitoMessage(err, "Something went wrong while registering. Please try again.")));
 //         return;
 //       }
 //       if (!result) {
@@ -193,7 +217,7 @@
 //       }
 //       resolve({
 //         userSub: result.userSub,
-//         username: result.user?.getUsername?.() || data.emailId,
+//         username: result.user?.getUsername?.() || data.email,
 //         codeDeliveryDetails: result.codeDeliveryDetails,
 //         rawResult: result,
 //       });
@@ -206,7 +230,7 @@
 //     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
 //     cognitoUser.confirmRegistration(otp, true, (err, result) => {
 //       if (err) {
-//         reject(err);
+//         reject(new Error(friendlyCognitoMessage(err, "Invalid or expired code. Please try again.")));
 //         return;
 //       }
 //       resolve({ status: result || "SUCCESS", message: "Email verified successfully" });
@@ -219,7 +243,7 @@
 //     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
 //     cognitoUser.resendConfirmationCode((err, result) => {
 //       if (err) {
-//         reject(err);
+//         reject(new Error(friendlyCognitoMessage(err, "Could not resend the code. Please try again.")));
 //         return;
 //       }
 //       resolve(result);
@@ -229,7 +253,7 @@
 
 // /* ---------------------------------------------------------------
 //    SET PASSWORD (post-registration) — frontend + Cognito only, no backend.
-//    register.ts signs candidates up with a random temporary password they
+//    sendOtp() signs candidates up with a random temporary password they
 //    never see. Right after email OTP verification succeeds, we reuse
 //    Cognito's built-in forgotPassword mechanism as a "set your first real
 //    password" step: it emails a code to the same (already verified) address,
@@ -243,7 +267,8 @@
 //     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
 //     cognitoUser.forgotPassword({
 //       onSuccess: (data) => resolve(data),
-//       onFailure: (err) => reject(err),
+//       onFailure: (err) =>
+//         reject(new Error(friendlyCognitoMessage(err, "Could not send the password-setup code. Please try again."))),
 //       // Some pool configs call this instead of onSuccess once the code is sent.
 //       inputVerificationCode: (data) => resolve(data),
 //     });
@@ -260,7 +285,8 @@
 //     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
 //     cognitoUser.confirmPassword(code, newPassword, {
 //       onSuccess: () => resolve("Password set successfully"),
-//       onFailure: (err) => reject(err),
+//       onFailure: (err) =>
+//         reject(new Error(friendlyCognitoMessage(err, "Failed to set password. Please check the code and try again."))),
 //     });
 //   });
 // };
@@ -306,7 +332,7 @@
 //           refreshToken: session.getRefreshToken().getToken(),
 //         });
 //       },
-//       onFailure: (err) => reject(err),
+//       onFailure: (err) => reject(new Error(friendlyCognitoMessage(err, "Login failed. Please try again."))),
 //       // Only fires for accounts created via AdminCreateUser that never went
 //       // through the Set Password step — shouldn't normally happen for
 //       // candidates who registered through the form, but handled just in case.
@@ -339,7 +365,6 @@
 // export const logout = (): void => {
 //   userPool.getCurrentUser()?.signOut();
 // };
-
 
 
 import {
@@ -439,6 +464,9 @@ export const calcDuration = (fromIso: string, toIso: string): DurationParts | nu
  * (email, name, birthdate, phone_number); everything else goes out as a
  * `custom:` attribute that must already exist in the pool schema.
  *
+ * `confirmMobile` / `confirmEmail` are frontend-only match checks (see
+ * registrationSchema.ts) — they are intentionally NOT sent to Cognito.
+ *
  * Because `data` is `RegistrationFormValues` (the output of
  * registrationSchema.parse/safeParse), every field here is guaranteed to be
  * present and already validated — no defensive fallback logic is needed.
@@ -486,6 +514,33 @@ class SchemaMisconfiguredError extends Error {
 }
 
 /**
+ * Turns Cognito's raw exception names into short, user-facing messages.
+ * Falls back to the SDK's own message (or `fallback`) for anything not
+ * explicitly mapped, so unexpected errors are never silently swallowed.
+ */
+const friendlyCognitoMessage = (err: unknown, fallback: string): string => {
+  const name = (err as { name?: string } | null)?.name;
+  switch (name) {
+    case "CodeMismatchException":
+      return "That verification code is incorrect. Please check and try again.";
+    case "ExpiredCodeException":
+      return "That verification code has expired. Please request a new one.";
+    case "InvalidPasswordException":
+      return "That password doesn't meet the requirements. Use at least 8 characters, including an uppercase letter, a lowercase letter, a number, and a special character.";
+    case "LimitExceededException":
+      return "Too many attempts. Please wait a few minutes and try again.";
+    case "UserNotFoundException":
+      return "We couldn't find an account for that email address.";
+    case "NotAuthorizedException":
+      return "This action isn't allowed right now. Please try registering again.";
+    case "InvalidParameterException":
+      return "Something about that request wasn't valid. Please check the details and try again.";
+    default:
+      return (err as { message?: string } | null)?.message || fallback;
+  }
+};
+
+/**
  * Registers the candidate in Cognito (signUp) and triggers the email OTP.
  * `data` must already be validated by `registrationSchema` (see registrationSchema.ts) —
  * call `registrationSchema.parse(formData)` / `.safeParse(formData)` before calling this.
@@ -521,7 +576,7 @@ export const sendOtp = async (data: RegistrationFormValues): Promise<SendOtpResp
           reject(new Error("An account with this email already exists. Please log in instead."));
           return;
         }
-        reject(err);
+        reject(new Error(friendlyCognitoMessage(err, "Something went wrong while registering. Please try again.")));
         return;
       }
       if (!result) {
@@ -543,7 +598,7 @@ export const verifyOtp = async (email: string, otp: string): Promise<VerifyOtpRe
     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
     cognitoUser.confirmRegistration(otp, true, (err, result) => {
       if (err) {
-        reject(err);
+        reject(new Error(friendlyCognitoMessage(err, "Invalid or expired code. Please try again.")));
         return;
       }
       resolve({ status: result || "SUCCESS", message: "Email verified successfully" });
@@ -556,7 +611,7 @@ export const resendOtp = async (email: string): Promise<unknown> => {
     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
     cognitoUser.resendConfirmationCode((err, result) => {
       if (err) {
-        reject(err);
+        reject(new Error(friendlyCognitoMessage(err, "Could not resend the code. Please try again.")));
         return;
       }
       resolve(result);
@@ -580,7 +635,8 @@ export const triggerSetPassword = (email: string): Promise<unknown> => {
     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
     cognitoUser.forgotPassword({
       onSuccess: (data) => resolve(data),
-      onFailure: (err) => reject(err),
+      onFailure: (err) =>
+        reject(new Error(friendlyCognitoMessage(err, "Could not send the password-setup code. Please try again."))),
       // Some pool configs call this instead of onSuccess once the code is sent.
       inputVerificationCode: (data) => resolve(data),
     });
@@ -597,7 +653,8 @@ export const confirmSetPassword = (
     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool });
     cognitoUser.confirmPassword(code, newPassword, {
       onSuccess: () => resolve("Password set successfully"),
-      onFailure: (err) => reject(err),
+      onFailure: (err) =>
+        reject(new Error(friendlyCognitoMessage(err, "Failed to set password. Please check the code and try again."))),
     });
   });
 };
@@ -643,7 +700,7 @@ export const login = (username: string, password: string): Promise<LoginResult> 
           refreshToken: session.getRefreshToken().getToken(),
         });
       },
-      onFailure: (err) => reject(err),
+      onFailure: (err) => reject(new Error(friendlyCognitoMessage(err, "Login failed. Please try again."))),
       // Only fires for accounts created via AdminCreateUser that never went
       // through the Set Password step — shouldn't normally happen for
       // candidates who registered through the form, but handled just in case.

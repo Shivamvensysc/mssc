@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, LockKeyhole, Eye, EyeOff } from 'lucide-react';
-
-// FIXED PATHS: Only one '../' because we are only one folder deep now!
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, Eye, EyeOff, KeyRound } from 'lucide-react';
 import examSheetImage from '../assets/pic1.png';
+
+// Import the Cognito functions (Adjust the path as needed for your project)
+import { login, triggerSetPassword, confirmSetPassword } from '../auth/cognito';
 
 // ==========================================
 // 1. FORGOT PASSWORD PAGE COMPONENT
@@ -12,20 +13,45 @@ export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-  };
+  // Setup states for Step 2: Confirming the code
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value);
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => setResetCode(e.target.value);
+  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    // Simulating API verification transition
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setErrorMsg('');
+    try {
+      await triggerSetPassword(email);
       setIsSubmitted(true);
-    }, 1000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to send reset code.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsConfirming(true);
+    setErrorMsg('');
+    try {
+      await confirmSetPassword(email, resetCode, newPassword);
+      setIsComplete(true);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to reset password.');
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   return (
@@ -52,11 +78,10 @@ export function ForgotPasswordPage() {
                     Forgot Password?
                   </h1>
                   <p className="font-body-md text-[16px] text-[#464554] max-w-sm mx-auto leading-relaxed">
-                    Enter your email address and we'll send you a link to reset your password.
+                    Enter your email address and we'll send you a code to reset your password.
                   </p>
                 </div>
 
-                {/* Form Handling Connected to State */}
                 <form className="space-y-6" onSubmit={handleSubmit}>
                   <div className="space-y-2">
                     <label className="font-label-md text-[14px] font-semibold text-[#464554] ml-1" htmlFor="email">
@@ -73,22 +98,94 @@ export function ForgotPasswordPage() {
                         placeholder="name@company.com"
                         value={email}
                         onChange={handleEmailChange}
-                        className="w-full pl-12 pr-6 py-2.5 bg-[#f7f9fb] border border-[#c7c4d7] rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-[#191c1e] placeholder-[#767586]/60 [&:-webkit-allowed-autofill]:shadow-[0_0_0_1000px_white_inset]"
+                        className="w-full pl-12 pr-6 py-2.5 bg-[#f7f9fb] border border-[#c7c4d7] rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-[#191c1e] placeholder-[#767586]/60 [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]"
                       />
                     </div>
                   </div>
 
-                  {/* State Trigger Button */}
+                  {errorMsg && <p className="text-red-500 text-sm text-center font-medium">{errorMsg}</p>}
+
                   <button
                     type="submit"
                     disabled={isSubmitting}
                     className="w-full bg-gradient-to-r from-[#4648d4] to-[#8127cf] text-white py-4 rounded-full font-label-md text-[14px] font-bold shadow-lg shadow-[#4648d4]/30 hover:shadow-[#4648d4]/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                    {isSubmitting ? 'Sending...' : 'Send Reset Code'}
                     {!isSubmitting && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
                   </button>
                 </form>
               </>
+            ) : !isComplete ? (
+              /* Step 2: Verify Code and Set New Password */
+              <div className="animate-[fadeIn_0.3s_ease-out]">
+                 <div className="text-center mb-8">
+                  <h1 className="font-headline-lg text-[28px] font-bold text-[#191c1e] mb-2 tracking-tight">
+                    Reset Password
+                  </h1>
+                  <p className="font-body-md text-[15px] text-[#464554] max-w-sm mx-auto leading-relaxed">
+                    We've sent a code to <span className="font-semibold text-[#191c1e]">{email}</span>.
+                  </p>
+                </div>
+                
+                <form className="space-y-5" onSubmit={handleConfirmSubmit}>
+                  <div className="space-y-2">
+                    <label className="font-label-md text-[14px] font-semibold text-[#464554] ml-1" htmlFor="resetCode">
+                      Verification Code
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#767586]">
+                        <KeyRound className="w-5 h-5" />
+                      </div>
+                      <input
+                        id="resetCode"
+                        type="text"
+                        required
+                        placeholder="Enter 6-digit code"
+                        value={resetCode}
+                        onChange={handleCodeChange}
+                        className="w-full pl-12 pr-6 py-2.5 bg-[#f7f9fb] border border-[#c7c4d7] rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-[#191c1e] placeholder-[#767586]/60 [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-label-md text-[14px] font-semibold text-[#464554] ml-1" htmlFor="newPassword">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#767586]">
+                        <LockKeyhole className="w-5 h-5" />
+                      </div>
+                      <input
+                        id="newPassword"
+                        type={showNewPassword ? 'text' : 'password'}
+                        required
+                        placeholder="Enter new password"
+                        value={newPassword}
+                        onChange={handleNewPasswordChange}
+                        className="w-full pl-12 pr-14 py-2.5 bg-[#f7f9fb] border border-[#c7c4d7] rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-[#191c1e] placeholder-[#767586]/60 [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]"
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute inset-y-0 right-0 pr-5 flex items-center text-[#767586] hover:text-[#4648d4] transition-colors"
+                      >
+                        {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {errorMsg && <p className="text-red-500 text-sm text-center font-medium">{errorMsg}</p>}
+
+                  <button
+                    type="submit"
+                    disabled={isConfirming}
+                    className="w-full bg-gradient-to-r from-[#4648d4] to-[#8127cf] text-white py-4 rounded-full font-label-md text-[14px] font-bold shadow-lg shadow-[#4648d4]/30 hover:shadow-[#4648d4]/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isConfirming ? 'Resetting...' : 'Set New Password'}
+                  </button>
+                </form>
+              </div>
             ) : (
               /* Success Confirmation View */
               <div className="space-y-8 text-center animate-[fadeIn_0.3s_ease-out]">
@@ -97,17 +194,16 @@ export function ForgotPasswordPage() {
                     <CheckCircle2 className="w-12 h-12 stroke-[1.5]" />
                   </div>
                 </div>
-
                 <div className="bg-[#f2f4f6] border border-[#c7c4d7]/30 rounded-2xl p-6 text-left flex items-start gap-4">
                   <div className="p-1 mt-0.5 rounded-md bg-white text-[#8127cf] shadow-sm">
-                    <Mail className="w-4 h-4" />
+                    <LockKeyhole className="w-4 h-4" />
                   </div>
                   <div>
                     <h3 className="font-label-md text-[14px] font-bold text-[#6900b3] mb-1">
-                      Email Sent Successfully
+                      Password Reset Successfully
                     </h3>
                     <p className="font-body-md text-[14px] text-[#464554] leading-relaxed">
-                      A path initialization link has been dispatched to <span className="font-semibold text-[#191c1e]">{email}</span>. Please check your inbox and spam folder.
+                      Your password has been successfully updated. You can now use your new password to log in to your account.
                     </p>
                   </div>
                 </div>
@@ -124,19 +220,7 @@ export function ForgotPasswordPage() {
               </Link>
             </div>
           </div>
-
-          {/* Security Trust Badges Layout Container */}
-          <div className="mt-1 flex justify-center gap-6 opacity-60 text-[#464554]">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-widest">
-              
-            </div>
-          </div>
         </div>
-      </div>
-
-      {/* Footer component sits cleanly at bottom layout level */}
-      <div className="relative z-4 w-full mt-auto">
-        
       </div>
     </div>
   );
@@ -146,44 +230,93 @@ export function ForgotPasswordPage() {
 // 2. LOGIN PAGE COMPONENT
 // ==========================================
 export function LoginPage() {
+  const navigate = useNavigate();
+  
+  // Login States
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
-  // NEW: toggles which card (Login vs Forgot Password) shows in the right-side slot
+  // Toggles which card (Login vs Forgot Password) shows in the right-side slot
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  // NEW: state for the inline forgot-password form
+  // Forgot Password inline form states
   const [resetEmail, setResetEmail] = useState('');
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
   const [isResetSubmitted, setIsResetSubmitted] = useState(false);
+  const [resetError, setResetError] = useState('');
+  
+  // Inline password confirm states
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isResetComplete, setIsResetComplete] = useState(false);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value);
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value);
+  const handleResetEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => setResetEmail(e.target.value);
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => setResetCode(e.target.value);
+  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login submitted:', { email, password });
+    setIsLoggingIn(true);
+    setLoginError('');
+    try {
+      const result = await login(email, password);
+      if (result.status === "SUCCESS") {
+        // Redirect upon successful authentication
+        navigate('/dashboard'); // Change this path to your protected route
+      } else if (result.status === "NEW_PASSWORD_REQUIRED") {
+        setLoginError("Your account requires a new password setup. Please contact support.");
+      }
+    } catch (err: any) {
+      setLoginError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
-  // NEW: handlers for the inline forgot-password form
-  const handleResetEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => setResetEmail(e.target.value);
-
-  const handleResetSubmit = (e: React.FormEvent) => {
+  const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsResetSubmitting(true);
-    setTimeout(() => {
-      setIsResetSubmitting(false);
+    setResetError('');
+    try {
+      await triggerSetPassword(resetEmail);
       setIsResetSubmitted(true);
-    }, 1000);
+    } catch(err: any) {
+      setResetError(err.message || 'Failed to send verification code.');
+    } finally {
+      setIsResetSubmitting(false);
+    }
   };
 
-  // NEW: reset everything and go back to the login card
+  const handleConfirmSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsConfirming(true);
+    setResetError('');
+    try {
+      await confirmSetPassword(resetEmail, resetCode, newPassword);
+      setIsResetComplete(true);
+    } catch (err: any) {
+      setResetError(err.message || 'Failed to set new password.');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   const backToLogin = () => {
     setShowForgotPassword(false);
     setResetEmail('');
+    setResetCode('');
+    setNewPassword('');
     setIsResetSubmitted(false);
-    setIsResetSubmitting(false);
+    setIsResetComplete(false);
+    setResetError('');
+    setLoginError('');
   };
 
   return (
@@ -196,18 +329,15 @@ export function LoginPage() {
         className="absolute inset-0 w-full h-full object-cover object-[75%_center] z-0"
       />
 
-      {/* Full-page gradient overlay so the gradient covers the whole background, not just the left side */}
+      {/* Full-page gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#4648d4]/85 via-[#4648d4]/40 to-[#8127cf]/70 z-[1] pointer-events-none"></div>
 
-      {/* Columns Content Container — FIXED: z-4 is not a valid Tailwind class, changed to z-10 so the card stacks above the overlay */}
+      {/* Columns Content Container */}
       <div className="flex flex-grow w-full relative z-10">
+        
         {/* Left Side: Brand Area */}
         <div className="hidden lg:flex lg:w-1/2 flex-col justify-center p-20 relative overflow-hidden">
-
-          {/* Fade overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#4648d4] from-10% via-[#4648d4]/60 via-40% to-transparent to-85% z-[1]"></div>
-
-          {/* Decorative circles */}
           <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl z-[1]"></div>
           
           <div className="relative z-10 text-white">
@@ -226,35 +356,31 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* Right Side: Login Form / Forgot Password Form — same background stays visible behind either card */}
+        {/* Right Side: Login Form / Forgot Password Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 relative">
 
           {!showForgotPassword ? (
             /* -------- LOGIN CARD -------- */
             <div className="w-full max-w-[480px] bg-white shadow-[0px_20px_40px_rgba(0,0,0,0.1)] rounded-[2rem] px-8 py-12 md:px-14 md:py-16">
               
-              {/* Header Section */}
               <div className="mb-10 text-center">
                 <h2 className="font-headline-lg text-3xl text-on-surface mb-3 font-bold tracking-tight">Welcome Back</h2>
                 <p className="font-body-md text-on-surface-variant">Let's get started with your account.</p>
               </div>
 
-              {/* Login Form */}
-              <form className="space-y-5" onSubmit={handleSubmit}>
-                
-                {/* Email Field */}
+              <form className="space-y-5" onSubmit={handleLoginSubmit}>
                 <div>
                   <input 
                     id="email" 
-                    type="email"
-                    placeholder="Username" 
+                    type="text" // Kept "text" for Username compatibility based on your specs
+                    placeholder="Username or Email" 
                     value={email}
                     onChange={handleEmailChange}
+                    required
                     className="w-full px-6 py-2.5 bg-white border border-outline-variant rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-on-surface placeholder:text-outline [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]" 
                   />
                 </div>
 
-                {/* Password Field */}
                 <div className="space-y-4">
                   <div className="relative">
                     <input 
@@ -263,6 +389,7 @@ export function LoginPage() {
                       placeholder="Password" 
                       value={password}
                       onChange={handlePasswordChange}
+                      required
                       className="w-full pl-6 pr-14 py-2.5 bg-white border border-outline-variant rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-on-surface placeholder:text-outline [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]" 
                     />
                     <button 
@@ -275,7 +402,6 @@ export function LoginPage() {
                   </div>
 
                   <div className="text-right">
-                    {/* CHANGED: was <Link to="/forgot-password">, now swaps to the forgot-password card in place */}
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
@@ -285,21 +411,24 @@ export function LoginPage() {
                     </button>
                   </div>
                 </div>
+                
+                {loginError && <p className="text-red-500 text-sm text-center font-medium">{loginError}</p>}
 
-                {/* Primary Action */}
-                <button type="submit" className="w-full bg-gradient-to-r from-[#4648d4] to-[#8127cf] text-white py-4 rounded-full font-label-md font-bold shadow-lg shadow-[#4648d4]/30 hover:shadow-[#4648d4]/50 hover:opacity-90 transition-all active:scale-95">
-                  Login
+                <button 
+                  type="submit" 
+                  disabled={isLoggingIn}
+                  className="w-full bg-gradient-to-r from-[#4648d4] to-[#8127cf] text-white py-4 rounded-full font-label-md font-bold shadow-lg shadow-[#4648d4]/30 hover:shadow-[#4648d4]/50 hover:opacity-90 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isLoggingIn ? 'Logging in...' : 'Login'}
                 </button>
               </form>
 
-              {/* Divider */}
               <div className="my-4 flex items-center gap-4">
                 <div className="flex-grow h-px bg-outline-variant/30"></div>
                 <span className="font-label-sm text-[12px] text-outline uppercase tracking-wider font-semibold">OR</span>
                 <div className="flex-grow h-px bg-outline-variant/30"></div>
               </div>
 
-              {/* Footer Link */}
               <div className="mt-4 text-center">
                 <p className="font-body-md text-sm text-on-surface-variant">
                   Don't have an account? 
@@ -308,7 +437,7 @@ export function LoginPage() {
               </div>
             </div>
           ) : (
-            /* -------- FORGOT PASSWORD CARD (spacing tightened for a cleaner, even rhythm) -------- */
+            /* -------- FORGOT PASSWORD CARD -------- */
             <div className="w-full max-w-[480px] bg-white shadow-[0px_20px_40px_rgba(0,0,0,0.1)] rounded-[2rem] px-8 py-10 md:px-14 md:py-14">
 
               {!isResetSubmitted ? (
@@ -324,7 +453,7 @@ export function LoginPage() {
                       Forgot Password?
                     </h1>
                     <p className="font-body-md text-[15px] text-[#464554] max-w-sm mx-auto leading-relaxed">
-                      Enter your email address and we'll send you a link to reset your password.
+                      Enter your email address and we'll send you a code to reset your password.
                     </p>
                   </div>
 
@@ -344,21 +473,94 @@ export function LoginPage() {
                           placeholder="name@company.com"
                           value={resetEmail}
                           onChange={handleResetEmailChange}
-                          className="w-full pl-12 pr-6 py-2.5 bg-[#f7f9fb] border border-[#c7c4d7] rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-[#191c1e] placeholder-[#767586]/60"
+                          className="w-full pl-12 pr-6 py-2.5 bg-[#f7f9fb] border border-[#c7c4d7] rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-[#191c1e] placeholder-[#767586]/60 [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]"
                         />
                       </div>
                     </div>
+
+                    {resetError && <p className="text-red-500 text-sm text-center font-medium">{resetError}</p>}
 
                     <button
                       type="submit"
                       disabled={isResetSubmitting}
                       className="w-full bg-gradient-to-r from-[#4648d4] to-[#8127cf] text-white py-4 rounded-full font-label-md text-[14px] font-bold shadow-lg shadow-[#4648d4]/30 hover:shadow-[#4648d4]/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      {isResetSubmitting ? 'Sending...' : 'Send Reset Link'}
+                      {isResetSubmitting ? 'Sending...' : 'Send Reset Code'}
                       {!isResetSubmitting && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
                     </button>
                   </form>
                 </>
+              ) : !isResetComplete ? (
+                /* Step 2: Verification Form inline */
+                <div className="animate-[fadeIn_0.3s_ease-out]">
+                   <div className="text-center mb-8">
+                    <h1 className="font-headline-lg text-[24px] font-bold text-[#191c1e] mb-2 tracking-tight">
+                      Reset Password
+                    </h1>
+                    <p className="font-body-md text-[14px] text-[#464554] max-w-sm mx-auto leading-relaxed">
+                      We sent a verification code to <span className="font-semibold text-[#191c1e]">{resetEmail}</span>.
+                    </p>
+                  </div>
+                  
+                  <form className="space-y-4" onSubmit={handleConfirmSubmit}>
+                    <div className="space-y-1">
+                      <label className="font-label-md text-[14px] font-semibold text-[#464554] ml-1" htmlFor="inlineCode">
+                        Verification Code
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#767586]">
+                          <KeyRound className="w-5 h-5" />
+                        </div>
+                        <input
+                          id="inlineCode"
+                          type="text"
+                          required
+                          placeholder="6-digit code"
+                          value={resetCode}
+                          onChange={handleCodeChange}
+                          className="w-full pl-12 pr-6 py-2.5 bg-[#f7f9fb] border border-[#c7c4d7] rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-[#191c1e] placeholder-[#767586]/60 [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-label-md text-[14px] font-semibold text-[#464554] ml-1" htmlFor="inlineNewPassword">
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-[#767586]">
+                          <LockKeyhole className="w-5 h-5" />
+                        </div>
+                        <input
+                          id="inlineNewPassword"
+                          type={showNewPassword ? 'text' : 'password'}
+                          required
+                          placeholder="New password"
+                          value={newPassword}
+                          onChange={handleNewPasswordChange}
+                          className="w-full pl-12 pr-14 py-2.5 bg-[#f7f9fb] border border-[#c7c4d7] rounded-full focus:ring-2 focus:ring-[#4648d4]/20 focus:border-[#4648d4] transition-all outline-none text-[#191c1e] placeholder-[#767586]/60 [&:-webkit-autofill]:shadow-[0_0_0_1000px_white_inset]"
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute inset-y-0 right-0 pr-5 flex items-center text-[#767586] hover:text-[#4648d4] transition-colors"
+                        >
+                          {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {resetError && <p className="text-red-500 text-sm text-center font-medium">{resetError}</p>}
+
+                    <button
+                      type="submit"
+                      disabled={isConfirming}
+                      className="w-full mt-2 bg-gradient-to-r from-[#4648d4] to-[#8127cf] text-white py-4 rounded-full font-label-md text-[14px] font-bold shadow-lg shadow-[#4648d4]/30 hover:shadow-[#4648d4]/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isConfirming ? 'Resetting...' : 'Set New Password'}
+                    </button>
+                  </form>
+                </div>
               ) : (
                 <div className="space-y-6 text-center">
                   <div className="flex justify-center">
@@ -369,14 +571,14 @@ export function LoginPage() {
 
                   <div className="bg-[#f2f4f6] border border-[#c7c4d7]/30 rounded-2xl p-6 text-left flex items-start gap-4">
                     <div className="p-1 mt-0.5 rounded-md bg-white text-[#8127cf] shadow-sm">
-                      <Mail className="w-4 h-4" />
+                      <LockKeyhole className="w-4 h-4" />
                     </div>
                     <div>
                       <h3 className="font-label-md text-[14px] font-bold text-[#6900b3] mb-1">
-                        Email Sent Successfully
+                        Password Reset Complete
                       </h3>
                       <p className="font-body-md text-[14px] text-[#464554] leading-relaxed">
-                        A password reset link has been dispatched to <span className="font-semibold text-[#191c1e]">{resetEmail}</span>. Please check your inbox and spam folder.
+                        Your password has been changed. You can log in using your new credentials.
                       </p>
                     </div>
                   </div>
@@ -395,13 +597,7 @@ export function LoginPage() {
               </div>
             </div>
           )}
-
         </div>
-      </div>
-
-      {/* FIXED: Wrapped footer component with strict stacking contexts and width metrics */}
-      <div className="relative z-4 w-full mt-auto">
-      
       </div>
     </div>
   );
