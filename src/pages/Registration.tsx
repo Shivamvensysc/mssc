@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import RegistrationSuccess from './RegSuccess'; // adjust path as needed
 import { Link, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

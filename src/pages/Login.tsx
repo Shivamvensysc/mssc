@@ -268,8 +268,21 @@ export function LoginPage() {
     try {
       const result = await login(email, password);
       if (result.status === "SUCCESS") {
+
+        if (result.accessToken) {
+          localStorage.setItem('accessToken', result.accessToken);
+        }
+        
+        if (result.idToken) {
+          localStorage.setItem('idToken', result.idToken);
+        }
+        
+        if (result.refreshToken) {
+          localStorage.setItem('refreshToken', result.refreshToken);
+        }
+        
         // Redirect upon successful authentication
-        navigate('/dashboard'); // Change this path to your protected route
+        navigate('/application'); // Change this path to your protected route
       } else if (result.status === "NEW_PASSWORD_REQUIRED") {
         setLoginError("Your account requires a new password setup. Please contact support.");
       }
