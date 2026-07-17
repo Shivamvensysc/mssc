@@ -695,6 +695,27 @@ export default function RegistrationForm() {
                       )}
                       <FieldError message={errors.ph} />
                     </div>
+
+                    {/* MOVED: "Are you State Government Employees?" block */}
+                    <div className="space-y-4">
+                      <p className="font-label-md text-[14px] font-semibold text-on-surface-variant">Are you State Government Employees?<RequiredMark /></p>
+                      <div className="flex gap-6">
+                        {['Yes', 'No'].map((opt) => (
+                          <label key={`gov-${opt}`} className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="govEmployee"
+                              value={opt}
+                              checked={formData.govEmployee === opt}
+                              onChange={handleInputChange}
+                              className="w-5 h-5 text-primary border-outline focus:ring-primary"
+                            />
+                            <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <FieldError message={errors.govEmployee} />
+                    </div>
                   </div>
 
                   {/* Right Column */}
@@ -873,26 +894,6 @@ export default function RegistrationForm() {
                         </div>
                       </div>
                       <FieldError message={errors.captchaInput} />
-                    </div>
-
-                    <div className="space-y-4">
-                      <p className="font-label-md text-[14px] font-semibold text-on-surface-variant">Are you State Government Employees?<RequiredMark /></p>
-                      <div className="flex gap-6">
-                        {['Yes', 'No'].map((opt) => (
-                          <label key={`gov-${opt}`} className="flex items-center gap-2 cursor-pointer group">
-                            <input
-                              type="radio"
-                              name="govEmployee"
-                              value={opt}
-                              checked={formData.govEmployee === opt}
-                              onChange={handleInputChange}
-                              className="w-5 h-5 text-primary border-outline focus:ring-primary"
-                            />
-                            <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
-                          </label>
-                        ))}
-                      </div>
-                      <FieldError message={errors.govEmployee} />
                     </div>
                   </div>
                 </div>
