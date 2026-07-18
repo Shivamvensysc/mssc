@@ -224,6 +224,34 @@ export default function RegistrationForm() {
     return () => clearInterval(timer);
   }, [setPasswordResendCooldown]);
 
+  // =========================================================================
+  // ADDED LOGIC: Dynamically calculate max valid days for the chosen month/year
+  // =========================================================================
+  const getMaxDaysInSelectedMonth = () => {
+    const { dobMonth, dobYear } = formData;
+    if (!dobMonth) return 31; // Default to 31 if no month is selected yet
+    
+    const isNumericMonth = !isNaN(Number(dobMonth));
+    const monthIndex = isNumericMonth
+      ? parseInt(dobMonth, 10) - 1
+      : new Date(`${dobMonth} 1, 2000`).getMonth();
+    
+    // Default to a leap year (2024) if no year is selected so 29th is selectable for Feb
+    const year = dobYear ? parseInt(dobYear, 10) : 2024; 
+    
+    // JavaScript date trick: Day 0 of the next month returns the last day of the current month
+    return new Date(year, monthIndex + 1, 0).getDate();
+  };
+
+  // ADDED LOGIC: Reset selected Day if the user changes Month/Year to something shorter (e.g. 31st down to Feb)
+  useEffect(() => {
+    const maxDays = getMaxDaysInSelectedMonth();
+    if (formData.dobDay && parseInt(formData.dobDay, 10) > maxDays) {
+      setFormData((prev) => ({ ...prev, dobDay: '' }));
+    }
+  }, [formData.dobMonth, formData.dobYear]);
+  // =========================================================================
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -358,6 +386,37 @@ export default function RegistrationForm() {
 
   /** Step 1: validate with Zod, validate backend CAPTCHA, then register the candidate in Cognito. */
   const handleStep1Submit = async () => {
+    
+    // =========================================================================
+    // This backend Date submission check is kept as an extra safeguard layer
+    // =========================================================================
+    if (formData.dobDay && formData.dobMonth && formData.dobYear) {
+      const day = parseInt(formData.dobDay, 10);
+      const year = parseInt(formData.dobYear, 10);
+      
+      const isNumericMonth = !isNaN(Number(formData.dobMonth));
+      const monthIndex = isNumericMonth
+        ? parseInt(formData.dobMonth, 10) - 1
+        : new Date(`${formData.dobMonth} 1, 2000`).getMonth();
+
+      const dateObj = new Date(year, monthIndex, day);
+      
+      const isValidDate =
+        dateObj.getFullYear() === year &&
+        dateObj.getMonth() === monthIndex &&
+        dateObj.getDate() === day;
+
+      if (!isValidDate) {
+        setErrors((prev) => ({
+          ...prev,
+          dobDay: "Invalid date selected .",
+        }));
+        toast.error('Please select a valid Date of Birth.');
+        return;
+      }
+    }
+    // =========================================================================
+
     const result = registrationSchema.safeParse(formData);
 
     if (!result.success) {
@@ -520,19 +579,22 @@ export default function RegistrationForm() {
     <div className="bg-background min-h-screen font-body-md text-on-surface">
 
       <ToastContainer position="top-right" autoClose={4000} newestOnTop pauseOnHover />
-
-      <Header />
+ <Header />
 
       {/* 2. Hero Section */}
-      <header className="pt-24 pb-48 hero-gradient relative overflow-hidden">
+    {/* 2. Hero Section */}
+      <header className="pt-24 pb-40 hero-gradient relative overflow-hidden flex flex-col items-center justify-center">
+        <div className="relative z-10 text-center">
+          {/* Applied the Poppins font and tight letter spacing */}
+          <h1 className="text-3xl md:text-4xl font-bold font-poppins tracking-tight text-white mb-2">
+            Registration
+          </h1>
+        </div>
         {currentStep === 2 && (
-          <div className="absolute top-10 left-10 opacity-10">
+          <div className="absolute top-2 left-10 opacity-10">
               
           </div>
         )}
-        
-        
-        
       </header>
 
       {/* 3. Main Form Island */}
@@ -623,6 +685,7 @@ export default function RegistrationForm() {
                             <option value="">Please Select</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
+                             <option value="other">Third Gender</option>
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                         </div>
@@ -640,6 +703,8 @@ export default function RegistrationForm() {
                             <option value="">Please Select</option>
                             <option value="single">Single</option>
                             <option value="married">Married</option>
+                            <option value="Divorced">Divorced</option>
+                             <option value="Widow">Widow</option>
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                         </div>
@@ -737,8 +802,11 @@ export default function RegistrationForm() {
                     <div>
                       <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Date of Birth<RequiredMark /></label>
                       <div className="grid grid-cols-3 gap-3">
+                        {/* =============================================================================================== */}
+                        {/* ADDED LOGIC: the 'options' parameter for 'Day' gets sliced by getMaxDaysInSelectedMonth()       */}
+                        {/* =============================================================================================== */}
                         {[
-                          { label: 'Day', field: 'dobDay' as const, options: days },
+                          { label: 'Day', field: 'dobDay' as const, options: days.slice(0, getMaxDaysInSelectedMonth()) },
                           { label: 'Month', field: 'dobMonth' as const, options: months },
                           { label: 'Year', field: 'dobYear' as const, options: years },
                         ].map((item) => (
