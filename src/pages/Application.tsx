@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Footer from '../layout/Footer';
-import Header from '../layout/Header';
 import api from '../api/interceptor';
 
 import {
@@ -936,7 +934,6 @@ export default function ApplicationForm() {
     <div className="bg-background min-h-screen font-body-md text-on-surface">
       <ToastContainer position="top-right" autoClose={4000} newestOnTop pauseOnHover />
 
-      <Header />
 
       <header className="pt-24 pb-48 hero-gradient relative overflow-hidden">
         <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center text-white relative z-10">
@@ -1933,7 +1930,6 @@ export default function ApplicationForm() {
         </div>
       </main>
 
-      <Footer />
     </div>
   );
 }

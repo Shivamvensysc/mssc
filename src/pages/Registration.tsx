@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Footer from '../layout/Footer';
-import Header from '../layout/Header';
 import { getDistricts, getCategories, fetchCaptchaApi, validateCaptchaApi } from '../api/registrationApi'; // Adjust import path as needed
 import { sendOtp, verifyOtp, resendOtp, triggerSetPassword, confirmSetPassword } from '../auth/cognito'; // Adjust import path as needed
 import {
@@ -614,7 +612,7 @@ export default function RegistrationForm() {
     <div className="bg-background min-h-screen font-body-md text-on-surface">
 
       <ToastContainer position="top-right" autoClose={4000} newestOnTop pauseOnHover />
- <Header />
+ 
 
       {/* 2. Hero Section */}
     {/* 2. Hero Section */}
@@ -1250,7 +1248,7 @@ export default function RegistrationForm() {
         </div>
       )}
 
-      <Footer />
+      
     </div>
   );
 }
