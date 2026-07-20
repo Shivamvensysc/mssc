@@ -15,12 +15,7 @@ export const Header: React.FC = () => {
           </div>
         </Link>
         
-        {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex space-x-6 font-medium text-slate-600 text-sm">
-          <Link to="#home" className="hover:text-emerald-700 transition">Home</Link>
-        
-          <Link to="#support" className="hover:text-emerald-700 transition">Support</Link>
-        </nav>
+      
 
         {/* Desktop Authentication Controls */}
         <div className="hidden lg:flex items-center space-x-3 text-sm">

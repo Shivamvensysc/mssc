@@ -320,6 +320,12 @@ export default function ApplicationForm() {
   // State for API data
   const [districts, setDistricts] = useState<District[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  
+  // States for dynamic Address APIs
+  const [statesList, setStatesList] = useState<any[]>([]);
+  const [permDistrictsList, setPermDistrictsList] = useState<any[]>([]);
+  const [corrDistrictsList, setCorrDistrictsList] = useState<any[]>([]);
+
   const [loading, setLoading] = useState({
     districts: false,
     categories: false,
@@ -328,7 +334,6 @@ export default function ApplicationForm() {
     districts: '',
     categories: '',
   });
-  console.log(error)
 
   const [documents, setDocuments] = useState<Record<DocumentKey, DocumentSlot>>(emptyDocumentSlots);
   const [experienceRows, setExperienceRows] = useState<ExperienceRow[]>([newExperienceRow(1)]);
@@ -339,18 +344,13 @@ export default function ApplicationForm() {
   const [paymentAcknowledged, setPaymentAcknowledged] = useState(false);
   const [applicationId, setApplicationId] = useState<string>('');
   const [paymentOrderId, setPaymentOrderId] = useState<string>('');
-  console.log(paymentOrderId)
   const [isPaymentInitiated, setIsPaymentInitiated] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<string>('');
-  // Fee amount returned by /payment/initiate — fetched right after Step 1
-  // succeeds so it can be shown on the Payment step before the user even
-  // picks a payment mode.
   const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
   const [isFetchingAmount, setIsFetchingAmount] = useState(false);
 
   // State to store the complete application data for submission
   const [savedApplicationData, setSavedApplicationData] = useState<any>(null);
-  console.log(savedApplicationData)
 
   const setDocumentFile = (key: DocumentKey, file: File) => {
     setDocuments((prev) => {
@@ -416,6 +416,7 @@ export default function ApplicationForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch standard reference data
   useEffect(() => {
     const fetchData = async () => {
       setLoading((prev) => ({ ...prev, categories: true }));
@@ -429,7 +430,6 @@ export default function ApplicationForm() {
         }
       } catch (err) {
         setError((prev) => ({ ...prev, categories: 'Failed to load categories' }));
-        console.error('Error fetching categories:', err);
       } finally {
         setLoading((prev) => ({ ...prev, categories: false }));
       }
@@ -462,6 +462,71 @@ export default function ApplicationForm() {
     };
     fetchData();
   }, []);
+
+  // =========================================================================
+  // ADDED: Fetch States & Districts dynamically for Addresses
+  // =========================================================================
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const response = await api.get('/countries/1/states');
+        if (response.data && response.data.success) {
+          setStatesList(response.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching states:', err);
+      }
+    };
+    fetchStates();
+  }, []);
+
+  useEffect(() => {
+    const fetchPermDistricts = async () => {
+      if (!formData.permState) {
+        setPermDistrictsList([]);
+        return;
+      }
+      const selectedState = statesList.find(s => s.stateName === formData.permState);
+      if (selectedState) {
+        try {
+          const response = await api.get(`/states/${selectedState.stateId}/districts`);
+          if (response.data && response.data.success) {
+            setPermDistrictsList(response.data.data);
+          }
+        } catch (err) {
+          console.error('Error fetching permanent districts:', err);
+        }
+      }
+    };
+    if (statesList.length > 0) {
+      fetchPermDistricts();
+    }
+  }, [formData.permState, statesList]);
+
+  useEffect(() => {
+    const fetchCorrDistricts = async () => {
+      if (!formData.corrState || formData.sameAsPermanent) {
+        setCorrDistrictsList([]);
+        return;
+      }
+      const selectedState = statesList.find(s => s.stateName === formData.corrState);
+      if (selectedState) {
+        try {
+          const response = await api.get(`/states/${selectedState.stateId}/districts`);
+          if (response.data && response.data.success) {
+            setCorrDistrictsList(response.data.data);
+          }
+        } catch (err) {
+          console.error('Error fetching correspondence districts:', err);
+        }
+      }
+    };
+    if (statesList.length > 0 && !formData.sameAsPermanent) {
+      fetchCorrDistricts();
+    }
+  }, [formData.corrState, statesList, formData.sameAsPermanent]);
+
+  // =========================================================================
 
   useEffect(() => {
     const fetchApplicationData = async () => {
@@ -520,7 +585,17 @@ export default function ApplicationForm() {
     if (type === 'checkbox') {
       setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => {
+        const updatedData = { ...prev, [name]: value };
+        // Reset specific district when its state changes
+        if (name === 'permState') {
+          updatedData.permDistrict = '';
+        }
+        if (name === 'corrState') {
+          updatedData.corrDistrict = '';
+        }
+        return updatedData;
+      });
     }
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
@@ -551,12 +626,6 @@ export default function ApplicationForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Calls /payment/initiate as soon as we have an applicationId, purely to
-  // read back the applicable fee amount (and, if the backend returns one,
-  // a payment order id) so it can be displayed on the Payment step. This is
-  // called BEFORE the user has chosen a payment mode, so no `paymentMode`
-  // is sent here — the mode is attached later when the user actually pays
-  // from the Review step (see handleInitiatePayment below).
   const fetchPaymentAmount = async (appId: string) => {
     setIsFetchingAmount(true);
     try {
@@ -566,7 +635,6 @@ export default function ApplicationForm() {
 
       if (response.data.success) {
         const data = response.data.data || {};
-        // Backend field names can vary — check the common ones.
         const orderId = data.paymentOrderId || data.orderId || '';
         const amount = data.amount ?? data.fee ?? data.applicationFee ?? data.payableAmount;
 
@@ -596,7 +664,6 @@ export default function ApplicationForm() {
     }
   };
 
-  // Save application data (Step 1) before moving to payment
   const handleSaveApplication = async () => {
     if (!validateStep1()) {
       toast.error('Please fill all required fields correctly.');
@@ -636,15 +703,12 @@ export default function ApplicationForm() {
       if (response.data.success) {
         toast.success('Application data saved successfully!');
 
-        // Store the application ID for payment
         const newApplicationId = response.data.data?.applicationId;
         if (newApplicationId) {
           setApplicationId(newApplicationId);
         }
         setSavedApplicationData(response.data.data);
 
-        // step-1 succeeded → immediately call /payment/initiate so the
-        // Payment step can show the real fee amount instead of a hardcoded one.
         if (newApplicationId) {
           const paymentResult = await fetchPaymentAmount(newApplicationId);
           if (paymentResult === 'already_completed') {
@@ -676,7 +740,6 @@ export default function ApplicationForm() {
     }
   };
 
-  // Initialize Payment
   const handleInitiatePayment = async () => {
     if (!paymentMode) {
       toast.error('Please select a payment mode');
@@ -689,7 +752,6 @@ export default function ApplicationForm() {
 
     setIsPaymentInitiated(true);
     try {
-      // First, save the application if not already saved
       if (!applicationId) {
         const saved = await handleSaveApplication();
         if (!saved) {
@@ -704,17 +766,6 @@ export default function ApplicationForm() {
         }
       }
 
-      // Initiate payment (this time with the chosen payment mode, so the
-      // backend can return the actual paymentUrl to redirect to). Real
-      // response shape:
-      // {
-      //   success, message,
-      //   data: {
-      //     paymentOrderId, amount, currency, name, description,
-      //     prefill: { name, email, contact },
-      //     paymentUrl, paymentStatus, isFree
-      //   }
-      // }
       const response = await api.post('/payment/initiate', {
         applicationId: applicationId,
         paymentMode: paymentMode
@@ -732,7 +783,6 @@ export default function ApplicationForm() {
         if (newPaymentOrderId) setPaymentOrderId(newPaymentOrderId);
         if (amount !== undefined && amount !== null) setPaymentAmount(Number(amount));
 
-        // Nothing to pay (fully waived fee) — skip the gateway entirely.
         if (isFree) {
           setPaymentStatus('completed');
           toast.success('No payment required. Application submitted!');
@@ -744,7 +794,6 @@ export default function ApplicationForm() {
 
         if (paymentUrl) {
           toast.success('Payment initiated! Redirecting to payment gateway...');
-          // Redirect to payment gateway
           window.location.href = paymentUrl;
         } else {
           toast.error('Payment URL not received');
@@ -836,36 +885,44 @@ export default function ApplicationForm() {
       hslc_provisional_certificate: documents.hslcProvisionalCert.file,
     };
 
-    const education = {
-      tenth: {
-        school: formData.education10thSchool || '',
-        board: formData.education10thBoard || '',
-        year: formData.education10thYear || '',
-        percentage: formData.education10thPercentage ? parseFloat(formData.education10thPercentage) || 0 : 0,
+    const education = [
+      {
+        tenth: {
+          school: formData.education10thSchool || '',
+          board: formData.education10thBoard || '',
+          year: formData.education10thYear || '',
+          percentage: formData.education10thPercentage ? parseFloat(formData.education10thPercentage) || 0 : 0,
+        }
       },
-      twelfth: {
-        school: formData.education12thSchool || '',
-        board: formData.education12thBoard || '',
-        year: formData.education12thYear || '',
-        percentage: formData.education12thPercentage ? parseFloat(formData.education12thPercentage) || 0 : 0,
+      {
+        twelfth: {
+          school: formData.education12thSchool || '',
+          board: formData.education12thBoard || '',
+          year: formData.education12thYear || '',
+          percentage: formData.education12thPercentage ? parseFloat(formData.education12thPercentage) || 0 : 0,
+        }
       },
-      graduation: {
-        school: formData.educationGraduationSchool || '',
-        board: formData.educationGraduationBoard || '',
-        year: formData.educationGraduationYear || '',
-        percentage: formData.educationGraduationPercentage
-          ? parseFloat(formData.educationGraduationPercentage) || 0
-          : 0,
+      {
+        graduation: {
+          school: formData.educationGraduationSchool || '',
+          board: formData.educationGraduationBoard || '',
+          year: formData.educationGraduationYear || '',
+          percentage: formData.educationGraduationPercentage
+            ? parseFloat(formData.educationGraduationPercentage) || 0
+            : 0,
+        }
       },
-      post_graduation: {
-        school: formData.educationPostGraduationSchool || '',
-        board: formData.educationPostGraduationBoard || '',
-        year: formData.educationPostGraduationYear || '',
-        percentage: formData.educationPostGraduationPercentage
-          ? parseFloat(formData.educationPostGraduationPercentage) || 0
-          : 0,
-      },
-    };
+      {
+        post_graduation: {
+          school: formData.educationPostGraduationSchool || '',
+          board: formData.educationPostGraduationBoard || '',
+          year: formData.educationPostGraduationYear || '',
+          percentage: formData.educationPostGraduationPercentage
+            ? parseFloat(formData.educationPostGraduationPercentage) || 0
+            : 0,
+        }
+      }
+    ];
 
     const experience = {
       has_work_experience: formData.hasWorkExperience === 'yes',
@@ -886,25 +943,18 @@ export default function ApplicationForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Guard: the actual submission only happens from the Review step
     if (currentStep !== 3) return;
 
-    // Payment now happens back on Step 2, before Review — by the time the
-    // user is here with a completed payment, this click just finalizes
-    // the application.
     if (paymentStatus === 'completed') {
       goToStep(4);
       return;
     }
 
-    // If payment is pending, initiate it
     if (paymentStatus === 'pending') {
       toast.info('Payment is already in progress. Please complete the payment.');
       return;
     }
 
-    // Fallback: user somehow reached Review without paying yet — initiate
-    // payment now.
     await handleInitiatePayment();
   };
 
@@ -928,7 +978,6 @@ export default function ApplicationForm() {
     { label: 'Post Graduation', letter: 'D', school: 'educationPostGraduationSchool', board: 'educationPostGraduationBoard', year: 'educationPostGraduationYear', percentage: 'educationPostGraduationPercentage' },
   ];
 
-  // Human readable "not provided" fallback used throughout the Review step
   const displayVal = (v?: string) => (v && v.trim() ? v : '—');
 
   const documentReviewList: [DocumentKey, string][] = [
@@ -1140,11 +1189,31 @@ export default function ApplicationForm() {
                         </div>
                         <div>
                           <label className={fieldLabel}>State</label>
-                          <input className={fieldInput} type="text" name="permState" value={formData.permState} onChange={handleInputChange} />
+                          <select className={fieldInput} name="permState" value={formData.permState} onChange={handleInputChange}>
+                            <option value="">Select State</option>
+                            {statesList.map((s, idx) => (
+                              <option key={idx} value={s.stateName || s.name || s}>
+                                {s.stateName || s.name || s}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div>
                           <label className={fieldLabel}>District</label>
-                          <input className={fieldInput} type="text" name="permDistrict" value={formData.permDistrict} onChange={handleInputChange} />
+                          <select 
+                            className={fieldInput} 
+                            name="permDistrict" 
+                            value={formData.permDistrict} 
+                            onChange={handleInputChange}
+                            disabled={!formData.permState || permDistrictsList.length === 0}
+                          >
+                            <option value="">Select District</option>
+                            {permDistrictsList.map((d, idx) => (
+                              <option key={idx} value={d.districtName || d.name || d}>
+                                {d.districtName || d.name || d}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div>
                           <label className={fieldLabel}>Pincode</label>
@@ -1195,25 +1264,37 @@ export default function ApplicationForm() {
                         </div>
                         <div>
                           <label className={fieldLabel}>State</label>
-                          <input
+                          <select
                             className={`${fieldInput} ${formData.sameAsPermanent ? 'bg-surface-container-low text-on-surface-variant' : ''}`}
-                            type="text"
                             name="corrState"
                             value={formData.sameAsPermanent ? formData.permState : formData.corrState}
                             onChange={handleInputChange}
                             disabled={formData.sameAsPermanent}
-                          />
+                          >
+                            <option value="">Select State</option>
+                            {statesList.map((s, idx) => (
+                              <option key={idx} value={s.stateName || s.name || s}>
+                                {s.stateName || s.name || s}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div>
                           <label className={fieldLabel}>District</label>
-                          <input
+                          <select
                             className={`${fieldInput} ${formData.sameAsPermanent ? 'bg-surface-container-low text-on-surface-variant' : ''}`}
-                            type="text"
                             name="corrDistrict"
                             value={formData.sameAsPermanent ? formData.permDistrict : formData.corrDistrict}
                             onChange={handleInputChange}
-                            disabled={formData.sameAsPermanent}
-                          />
+                            disabled={formData.sameAsPermanent || (!formData.sameAsPermanent && (!formData.corrState || corrDistrictsList.length === 0))}
+                          >
+                            <option value="">Select District</option>
+                            {(formData.sameAsPermanent ? permDistrictsList : corrDistrictsList).map((d, idx) => (
+                              <option key={idx} value={d.districtName || d.name || d}>
+                                {d.districtName || d.name || d}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div>
                           <label className={fieldLabel}>Pincode</label>
@@ -1940,7 +2021,7 @@ export default function ApplicationForm() {
         </div>
       </main>
 
-   
+      
     </div>
   );
 }
