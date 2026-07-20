@@ -32,7 +32,7 @@ jobs:
         aws-region: us-east-2
 
     - name: Deploy to S3
-      run: aws s3 sync ./dist s3://shivam-mssc --delete
+      run: aws s3 sync ./dist s3://shivam-mssc-demo --delete
 
     - name: Invalidate CloudFront Cache
-      run: aws cloudfront create-invalidation --distribution-id E1CU0U44T85F0K --paths "/*"
+      run: aws cloudfront create-invalidation --distribution-id ELCNGQFIHBCUZ --paths "/*"
