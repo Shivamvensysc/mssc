@@ -18,6 +18,7 @@ import {
   MOBILE_REGEX,
 } from '../schemas/registrationSchema'; // Adjust import path as needed
 
+
 interface RegistrationFormData {
   name: string;
   citizen: string;
@@ -27,6 +28,8 @@ interface RegistrationFormData {
   maritalStatus: string;
   reservationCategory: string;
   ph: string;
+  disabilityType: string;
+  disability40Percent: string;
   dobDay: string;
   dobMonth: string;
   dobYear: string;
@@ -67,6 +70,8 @@ const initialFormData: RegistrationFormData = {
   maritalStatus: '',
   reservationCategory: '',
   ph: '',
+  disabilityType: '',
+  disability40Percent: '',
   dobDay: '',
   dobMonth: '',
   dobYear: '',
@@ -104,6 +109,7 @@ export default function RegistrationForm() {
   const [errors, setErrors] = useState<RegistrationFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  console.log(setCurrentStep)
 
   // ---- CAPTCHA State ----
   const [captchaId, setCaptchaId] = useState<string>('');
@@ -264,6 +270,33 @@ export default function RegistrationForm() {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
+  /* ---------------- PH (Physically Handicapped) live handling ---------------- */
+  // The "Type of Disability" and "40% disability" fields only apply when ph === 'Yes'.
+  // Switching back to 'No' clears them so no stale/hidden values get submitted.
+  const handlePhChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      ph: value,
+      disabilityType: value === 'Yes' ? prev.disabilityType : '',
+      disability40Percent: value === 'Yes' ? prev.disability40Percent : '',
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      ph: undefined,
+      disabilityType: undefined,
+      disability40Percent: undefined,
+    }));
+  };
+
+  /* ---------------- Name live validation ---------------- */
+  // No digits allowed, capped at 50 characters (mirrors NAME_REGEX / .max(50) in registrationSchema).
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[0-9]/g, '').slice(0, 50);
+    setFormData((prev) => ({ ...prev, name: value }));
+    setErrors((prev) => ({ ...prev, name: undefined }));
+  };
+
   /* ---------------- Mobile / Confirm-mobile live validation ---------------- */
 
   const getMobileHint = (value: string): string | undefined => {
@@ -286,7 +319,8 @@ export default function RegistrationForm() {
   };
 
   const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    // Only digits allowed — anything else (letters, symbols, pasted junk) is stripped.
+    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
     setFormData((prev) => ({ ...prev, mobile: value }));
     setErrors((prev) => ({
       ...prev,
@@ -298,7 +332,8 @@ export default function RegistrationForm() {
   };
 
   const handleConfirmMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    // Only digits allowed here too, same as the Mobile No. field above.
+    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
     setFormData((prev) => ({ ...prev, confirmMobile: value }));
     setErrors((prev) => ({ ...prev, confirmMobile: getConfirmMobileHint(value, formData.mobile) }));
   };
@@ -747,7 +782,7 @@ export default function RegistrationForm() {
                               name="ph"
                               value={opt}
                               checked={formData.ph === opt}
-                              onChange={handleInputChange}
+                              onChange={handlePhChange}
                               className="w-5 h-5 text-primary border-outline focus:ring-primary"
                             />
                             <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
@@ -758,6 +793,53 @@ export default function RegistrationForm() {
                         <p className="text-error font-label-sm text-[12px] italic">[Must have a minimum of 40% specified disability]</p>
                       )}
                       <FieldError message={errors.ph} />
+
+                      {formData.ph === 'Yes' && (
+                        <div className="space-y-4 pt-2">
+                          <div>
+                            <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Type of Disability<RequiredMark /></label>
+                            <div className="relative">
+                              <select
+                                name="disabilityType"
+                                value={formData.disabilityType}
+                                onChange={handleInputChange}
+                                className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
+                              >
+                                <option value="">Please Select</option>
+                                <option value="Locomotor Disability">Locomotor Disability</option>
+                                <option value="Visual Impairment">Visual Impairment</option>
+                                <option value="Hearing Impairment">Hearing Impairment</option>
+                                <option value="Intellectual Disability">Intellectual Disability</option>
+                                <option value="Mental Illness">Mental Illness</option>
+                                <option value="Multiple Disabilities">Multiple Disabilities</option>
+                                <option value="Others">Others</option>
+                              </select>
+                              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+                            </div>
+                            <FieldError message={errors.disabilityType} />
+                          </div>
+
+                          <div className="space-y-2">
+                            <p className="font-label-md text-[14px] font-semibold text-on-surface-variant">Are you a person with 40% disability?<RequiredMark /></p>
+                            <div className="flex gap-6">
+                              {['Yes', 'No'].map((opt) => (
+                                <label key={`ph90-${opt}`} className="flex items-center gap-2 cursor-pointer group">
+                                  <input
+                                    type="radio"
+                                    name="disability40Percent"
+                                    value={opt}
+                                    checked={formData.disability40Percent === opt}
+                                    onChange={handleInputChange}
+                                    className="w-5 h-5 text-primary border-outline focus:ring-primary"
+                                  />
+                                  <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <FieldError message={errors.disability40Percent} />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* MOVED: "Are you State Government Employees?" block */}
@@ -791,7 +873,8 @@ export default function RegistrationForm() {
                           type="text"
                           name="name"
                           value={formData.name}
-                          onChange={handleInputChange}
+                          onChange={handleNameChange}
+                          maxLength={50}
                           className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           placeholder="Enter your full name"
                         />
