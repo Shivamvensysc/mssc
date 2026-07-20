@@ -574,12 +574,23 @@ export default function ApplicationForm() {
         if (amount !== undefined && amount !== null) {
           setPaymentAmount(Number(amount));
         }
+        return 'success';
       } else {
+        if (response.data.message?.toLowerCase().includes('already been completed') || response.data.message?.toLowerCase().includes('already completed')) {
+          setPaymentStatus('completed');
+          return 'already_completed';
+        }
         toast.error(response.data.message || 'Failed to fetch payment details');
+        return 'error';
       }
     } catch (err: any) {
       const message = err.response?.data?.message || err.message || 'Failed to fetch payment details';
+      if (message.toLowerCase().includes('already been completed') || message.toLowerCase().includes('already completed')) {
+        setPaymentStatus('completed');
+        return 'already_completed';
+      }
       toast.error(message);
+      return 'error';
     } finally {
       setIsFetchingAmount(false);
     }
@@ -635,7 +646,10 @@ export default function ApplicationForm() {
         // step-1 succeeded → immediately call /payment/initiate so the
         // Payment step can show the real fee amount instead of a hardcoded one.
         if (newApplicationId) {
-          await fetchPaymentAmount(newApplicationId);
+          const paymentResult = await fetchPaymentAmount(newApplicationId);
+          if (paymentResult === 'already_completed') {
+            return 'already_completed';
+          }
         }
 
         return true;
@@ -654,7 +668,10 @@ export default function ApplicationForm() {
 
   const handleNextFromStep1 = async () => {
     const saved = await handleSaveApplication();
-    if (saved) {
+    if (saved === 'already_completed') {
+      toast.info('Payment is already completed. Proceeding to Review.');
+      goToStep(3);
+    } else if (saved) {
       goToStep(2);
     }
   };
@@ -676,6 +693,12 @@ export default function ApplicationForm() {
       if (!applicationId) {
         const saved = await handleSaveApplication();
         if (!saved) {
+          setIsPaymentInitiated(false);
+          return;
+        }
+        if (saved === 'already_completed') {
+          toast.success('Payment already completed! Redirecting to review.');
+          goToStep(3);
           setIsPaymentInitiated(false);
           return;
         }
@@ -728,41 +751,29 @@ export default function ApplicationForm() {
           setIsPaymentInitiated(false);
         }
       } else {
+        if (response.data.message?.toLowerCase().includes('already been completed') || response.data.message?.toLowerCase().includes('already completed')) {
+          setPaymentStatus('completed');
+          toast.success('Payment already completed! Redirecting to review.');
+          goToStep(3);
+          setIsPaymentInitiated(false);
+          return;
+        }
         toast.error(response.data.message || 'Failed to initiate payment');
         setIsPaymentInitiated(false);
       }
     } catch (err: any) {
       const message = err.response?.data?.message || err.message || 'Failed to initiate payment';
+      if (message.toLowerCase().includes('already been completed') || message.toLowerCase().includes('already completed')) {
+        setPaymentStatus('completed');
+        toast.success('Payment already completed! Redirecting to review.');
+        goToStep(3);
+        setIsPaymentInitiated(false);
+        return;
+      }
       toast.error(message);
       setIsPaymentInitiated(false);
     }
   };
-
-  // Verify Payment - This would be called from the payment callback URL
-  // const handleVerifyPayment = async (gatewayResponse: any) => {
-  //   try {
-  //     const response = await api.post('/payment/verify', {
-  //       paymentOrderId: paymentOrderId,
-  //       gatewayResponse: gatewayResponse
-  //     });
-
-  //     if (response.data.success) {
-  //       setPaymentStatus('completed');
-  //       toast.success('Payment verified successfully! Please review your application.');
-  //       goToStep(3);
-  //       return true;
-  //     } else {
-  //       toast.error(response.data.message || 'Payment verification failed');
-  //       setPaymentStatus('failed');
-  //       return false;
-  //     }
-  //   } catch (err: any) {
-  //     const message = err.response?.data?.message || err.message || 'Payment verification failed';
-  //     toast.error(message);
-  //     setPaymentStatus('failed');
-  //     return false;
-  //   }
-  // };
 
   const preparePayload = () => {
     const buildAddress = (v: string, c: string, s: string, d: string, p: string) =>
@@ -934,8 +945,7 @@ export default function ApplicationForm() {
     <div className="bg-background min-h-screen font-body-md text-on-surface">
       <ToastContainer position="top-right" autoClose={4000} newestOnTop pauseOnHover />
 
-
-      <header className="pt-24 pb-48 hero-gradient relative overflow-hidden">
+      <header className="pt-24 pb-48 bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 relative overflow-hidden">
         <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center text-white relative z-10">
           <h1 className="text-6xl font-bold text-white mb-6">
             {currentStep === 1
@@ -1553,7 +1563,7 @@ export default function ApplicationForm() {
                     type="button"
                     onClick={handleNextFromStep1}
                     disabled={isSubmitting || isFetchingAmount}
-                    className="primary-gradient text-white px-16 py-4 rounded-full font-label-md text-[14px] shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white px-16 py-4 rounded-full font-label-md text-[14px] shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? 'Saving...' : isFetchingAmount ? 'Fetching Fee...' : 'Next: Payment'}
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -1659,7 +1669,7 @@ export default function ApplicationForm() {
                     type="button"
                     onClick={handleInitiatePayment}
                     disabled={!paymentMode || !paymentAcknowledged || isPaymentInitiated}
-                    className="primary-gradient text-white px-16 py-4 rounded-full font-label-md text-[14px] shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white px-16 py-4 rounded-full font-label-md text-[14px] shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isPaymentInitiated ? 'Redirecting...' : 'Proceed to Pay'}
                     <span className="material-symbols-outlined text-[18px]">
@@ -1873,7 +1883,7 @@ export default function ApplicationForm() {
                   <button
                     type="submit"
                     disabled={isSubmitting || isPaymentInitiated}
-                    className="primary-gradient text-white px-16 py-4 rounded-full font-label-md text-[14px] shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-900 text-white px-16 py-4 rounded-full font-label-md text-[14px] shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isSubmitting
                       ? 'Processing...'
@@ -1930,6 +1940,7 @@ export default function ApplicationForm() {
         </div>
       </main>
 
+   
     </div>
   );
 }
