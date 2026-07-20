@@ -123,7 +123,7 @@ export const HomePage: React.FC = () => {
               
               {/* Qualifications */}
               <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-3">
-                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2 text-emerald-700"><i class="fas fa-certificate"></i> Educational Qualifications</h3>
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2 text-emerald-700"><i className="fas fa-certificate"></i> Educational Qualifications</h3>
                 <ul className="list-disc list-inside space-y-2 text-slate-600 text-xs leading-relaxed">
                   <li>10+2 (or equivalent) with at least 50% marks (or 45% in accordance with NCTE Regulations, 2002).</li>
                   <li>D.Ed. or D.El.Ed in Special Education from an RCI approved institute with a **valid RCI CRR number**.</li>
@@ -185,7 +185,7 @@ export const HomePage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-3 p-4">
                   <span>Basic Mathematics</span>
-                  <span class="text-center font-medium">25</span>
+                  <span className="text-center font-medium">25</span>
                   <span className="text-center font-medium">25</span>
                 </div>
                 <div className="grid grid-cols-3 p-4">
