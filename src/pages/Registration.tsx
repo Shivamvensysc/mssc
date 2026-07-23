@@ -1,10 +1,8 @@
-
-
 import React, { useState, useEffect,  } from 'react';
 import { Link } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getDistricts, getCategories, fetchCaptchaApi, validateCaptchaApi } from '../api/registrationApi'; // Adjust import path as needed
+import { getDistricts, getCategories, getPosts, getDisabilities, fetchCaptchaApi, validateCaptchaApi } from '../api/registrationApi'; // Adjust import path as needed
 import { sendOtp, verifyOtp, resendOtp, triggerSetPassword, confirmSetPassword } from '../auth/cognito'; // Adjust import path as needed
 import {
   registrationSchema,
@@ -20,6 +18,7 @@ import {
 
 
 interface RegistrationFormData {
+  postName: string;
   name: string;
   citizen: string;
   dialect: string;
@@ -40,6 +39,8 @@ interface RegistrationFormData {
   district: string;
   captchaInput: string;
   govEmployee: string;
+  experience: string;
+  department: string;
 }
 
 type RegistrationFormErrors = Partial<Record<keyof RegistrationFormData, string>>;
@@ -61,7 +62,20 @@ interface Category {
   subCategories: any[];
 }
 
+interface Post {
+  postId: number;
+  postName: string;
+  isActive: boolean;
+}
+
+interface Disability {
+  disabilityId: number;
+  disabilityName: string;
+  isActive: boolean;
+}
+
 const initialFormData: RegistrationFormData = {
+  postName: '',
   name: '',
   citizen: '',
   dialect: '',
@@ -82,6 +96,8 @@ const initialFormData: RegistrationFormData = {
   district: '',
   captchaInput: '',
   govEmployee: '',
+  experience: '',
+  department: '',
 };
 
 const initialSetPasswordForm: SetPasswordFormState = {
@@ -108,7 +124,7 @@ export default function RegistrationForm() {
   const [errors, setErrors] = useState<RegistrationFormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  console.log(setCurrentStep)
+  // console.log(setCurrentStep)
 
   // ---- CAPTCHA State ----
   const [captchaId, setCaptchaId] = useState<string>('');
@@ -119,13 +135,19 @@ export default function RegistrationForm() {
   // State for API data
   const [districts, setDistricts] = useState<District[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [disabilities, setDisabilities] = useState<Disability[]>([]);
   const [loading, setLoading] = useState({
     districts: false,
-    categories: false
+    categories: false,
+    posts: false,
+    disabilities: false
   });
   const [error, setError] = useState({
     districts: '',
-    categories: ''
+    categories: '',
+    posts: '',
+    disabilities: ''
   });
 
   // ---- Cognito OTP verification state ----
@@ -175,7 +197,37 @@ export default function RegistrationForm() {
     }
   };
 
-  // Fetch districts, categories, and initial CAPTCHA on mount
+  // Fetch disability types (GET /api/v1/disabilities).
+  // Called lazily the first time the candidate answers "Yes" to the PH question,
+  // rather than on every mount, since most candidates never need this list.
+  const fetchDisabilities = async () => {
+    if (disabilities.length > 0) return; // already loaded — avoid refetching every time "Yes" is clicked
+
+    setLoading(prev => ({ ...prev, disabilities: true }));
+    try {
+      const disabilitiesData = await getDisabilities();
+      const rawList = Array.isArray(disabilitiesData?.data?.disabilities)
+        ? disabilitiesData.data.disabilities
+        : Array.isArray(disabilitiesData?.data)
+        ? disabilitiesData.data
+        : Array.isArray(disabilitiesData)
+        ? disabilitiesData
+        : [];
+      if (rawList.length > 0 || disabilitiesData?.success) {
+        setDisabilities(rawList);
+        setError(prev => ({ ...prev, disabilities: '' }));
+      } else {
+        setError(prev => ({ ...prev, disabilities: 'Failed to load disability types' }));
+      }
+    } catch (err) {
+      setError(prev => ({ ...prev, disabilities: 'Failed to load disability types' }));
+      console.error('Error fetching disabilities:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, disabilities: false }));
+    }
+  };
+
+  // Fetch districts, categories, posts, and initial CAPTCHA on mount
   useEffect(() => {
     const fetchData = async () => {
       // Fetch districts
@@ -210,6 +262,32 @@ export default function RegistrationForm() {
         console.error('Error fetching categories:', err);
       } finally {
         setLoading(prev => ({ ...prev, categories: false }));
+      }
+
+      // Fetch posts (GET /api/v1/posts)
+      setLoading(prev => ({ ...prev, posts: true }));
+      try {
+        const postsData = await getPosts();
+       // TEMP: inspect actual shape in console
+      //  console.log('getPosts raw response:', postsData);
+        const rawList = Array.isArray(postsData?.data?.posts)
+          ? postsData.data.posts
+          : Array.isArray(postsData?.data)
+          ? postsData.data
+          : Array.isArray(postsData)
+          ? postsData
+          : [];
+        if (rawList.length > 0 || postsData?.success) {
+          setPosts(rawList);
+          setError(prev => ({ ...prev, posts: '' }));
+        } else {
+          setError(prev => ({ ...prev, posts: 'Failed to load posts' }));
+        }
+      } catch (err) {
+        setError(prev => ({ ...prev, posts: 'Failed to load posts' }));
+        console.error('Error fetching posts:', err);
+      } finally {
+        setLoading(prev => ({ ...prev, posts: false }));
       }
       
       // Fetch initial CAPTCHA
@@ -290,6 +368,45 @@ export default function RegistrationForm() {
       disabilityType: undefined,
       disability40Percent: undefined,
     }));
+
+    if (value === 'Yes') {
+      fetchDisabilities();
+    }
+  };
+
+  /* ---------------- Government Employee live handling ---------------- */
+  // The "Experience" and "Department" fields only apply when govEmployee === 'Yes'.
+  // Switching back to 'No' clears them so no stale/hidden values get submitted.
+  const handleGovEmployeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      govEmployee: value,
+      experience: value === 'Yes' ? prev.experience : '',
+      department: value === 'Yes' ? prev.department : '',
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      govEmployee: undefined,
+      experience: undefined,
+      department: undefined,
+    }));
+  };
+
+  /* ---------------- Experience live validation ---------------- */
+  // Digits only, capped at 2 digits (0-99 years) — no letters/symbols allowed.
+  const handleExperienceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 2);
+    setFormData((prev) => ({ ...prev, experience: value }));
+    setErrors((prev) => ({ ...prev, experience: undefined }));
+  };
+
+  /* ---------------- Department live validation ---------------- */
+  // No digits allowed, capped at 50 characters (mirrors the Name field's rule).
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[0-9]/g, '').slice(0, 50);
+    setFormData((prev) => ({ ...prev, department: value }));
+    setErrors((prev) => ({ ...prev, department: undefined }));
   };
 
   /* ---------------- Name live validation ---------------- */
@@ -656,16 +773,38 @@ export default function RegistrationForm() {
                   {/* Left Column */}
                   <div className="space-y-8">
                     <div>
-                      <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Post Name</label>
-                      <div className="py-2.5 p-4 bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-on-surface">
-                       Special Primary Teacher
+                      <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Post Name<RequiredMark /></label>
+                      <div className="relative">
+                        <select
+                          name="postName"
+                          value={formData.postName}
+                          onChange={handleInputChange}
+                          className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
+                          disabled={loading.posts}
+                        >
+                          <option value="">{loading.posts ? 'Loading...' : 'Please Select'}</option>
+                          {posts.map((post: any, idx: number) => {
+                            const label = post.postName ?? post.name ?? post.title ?? post.post_name ?? '';
+                            const key = post.postId ?? post.id ?? post.post_id ?? idx;
+                            return (
+                              <option key={key} value={label}>
+                                {label}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                       </div>
+                      {error.posts && (
+                        <p className="text-error font-label-sm text-[12px] mt-1">{error.posts}</p>
+                      )}
+                      <FieldError message={errors.postName} />
                     </div>
 
                     <div className="space-y-4">
                       <p className="font-label-md text-[14px] font-semibold text-on-surface-variant">Are you citizen of india?<RequiredMark /></p>
                       <div className="flex gap-6">
-                        {['Yes', 'No'].map((opt) => (
+                        {['Yes'].map((opt) => (
                           <label key={opt} className="flex items-center gap-2 cursor-pointer group">
                             <input
                               type="radio"
@@ -730,7 +869,7 @@ export default function RegistrationForm() {
                             <option value="">Please Select</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
-                             <option value="other">Third Gender</option>
+                             <option value="other">Transgender</option>
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                         </div>
@@ -748,8 +887,8 @@ export default function RegistrationForm() {
                             <option value="">Please Select</option>
                             <option value="single">Single</option>
                             <option value="married">Married</option>
-                            <option value="Divorced">Divorced</option>
-                             <option value="Widow">Widow</option>
+                            <option value="Divorced">Divorced/Widow</option>
+                             
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                         </div>
@@ -814,18 +953,24 @@ export default function RegistrationForm() {
                                 value={formData.disabilityType}
                                 onChange={handleInputChange}
                                 className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
+                                disabled={loading.disabilities}
                               >
-                                <option value="">Please Select</option>
-                                <option value="Locomotor Disability">Locomotor Disability</option>
-                                <option value="Visual Impairment">Visual Impairment</option>
-                                <option value="Hearing Impairment">Hearing Impairment</option>
-                                <option value="Intellectual Disability">Intellectual Disability</option>
-                                <option value="Mental Illness">Mental Illness</option>
-                                <option value="Multiple Disabilities">Multiple Disabilities</option>
-                                <option value="Others">Others</option>
+                                <option value="">{loading.disabilities ? 'Loading...' : 'Please Select'}</option>
+                                {disabilities.map((disability: any, idx: number) => {
+                                  const label = disability.disabilityName ?? disability.name ?? disability.label ?? disability.type ?? '';
+                                  const key = disability.disabilityId ?? disability.id ?? idx;
+                                  return (
+                                    <option key={key} value={label}>
+                                      {label}
+                                    </option>
+                                  );
+                                })}
                               </select>
                               <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                             </div>
+                            {error.disabilities && (
+                              <p className="text-error font-label-sm text-[12px] mt-1">{error.disabilities}</p>
+                            )}
                             <FieldError message={errors.disabilityType} />
                           </div>
 
@@ -863,7 +1008,7 @@ export default function RegistrationForm() {
                               name="govEmployee"
                               value={opt}
                               checked={formData.govEmployee === opt}
-                              onChange={handleInputChange}
+                              onChange={handleGovEmployeeChange}
                               className="w-5 h-5 text-primary border-outline focus:ring-primary"
                             />
                             <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
@@ -871,6 +1016,38 @@ export default function RegistrationForm() {
                         ))}
                       </div>
                       <FieldError message={errors.govEmployee} />
+
+                      {formData.govEmployee === 'Yes' && (
+                        <div className="space-y-4 pt-2">
+                          <div>
+                            <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Experience<RequiredMark /></label>
+                            <input
+                              type="text"
+                              name="experience"
+                              value={formData.experience}
+                              onChange={handleExperienceChange}
+                              className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
+                              placeholder="Enter years of experience"
+                              maxLength={2}
+                              inputMode="numeric"
+                            />
+                            <FieldError message={errors.experience} />
+                          </div>
+
+                          <div>
+                            <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Department<RequiredMark /></label>
+                            <input
+                              type="text"
+                              name="department"
+                              value={formData.department}
+                              onChange={handleDepartmentChange}
+                              className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
+                              placeholder="Enter your department"
+                            />
+                            <FieldError message={errors.department} />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

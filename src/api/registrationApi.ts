@@ -1,6 +1,10 @@
 import api from './interceptor'
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
-
+export const getPosts = async () => {
+  const response = await api.get('/posts');
+  return response.data; // expects { success: true, data: [{ postId, postName, isActive }, ...] }
+};
+ 
 // Interfaces for Captcha responses
 export interface CaptchaResponse {
   success: boolean;
@@ -36,6 +40,16 @@ export const getCategories = async () => {
   }
 };
 
+// Disabilities API
+export const getDisabilities = async () => {
+  try {
+    const response = await api.get(`${BASE_URL}/disabilities`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching disabilities:', error);
+    throw error;
+  }
+};
 
 // Captcha APIs
 export const fetchCaptchaApi = async () => {
@@ -61,6 +75,7 @@ export const validateCaptchaApi = async (captchaId: string, captchaText: string)
       }
     );
     return response;
+    
   } catch (error) {
     console.error('Error validating CAPTCHA:', error);
     throw error;

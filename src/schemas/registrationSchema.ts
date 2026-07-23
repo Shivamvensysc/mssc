@@ -295,6 +295,8 @@ export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])
 --------------------------------------------------------------- */
 export const registrationSchema = z
   .object({
+    postName: z.string().trim().min(1, "Please select a post"),
+
     name: z
       .string()
       .trim()
@@ -341,6 +343,9 @@ export const registrationSchema = z
     captchaInput: z.string().trim().min(1, "Please enter the security code"),
 
     govEmployee: yesNo,
+   department: z.string().optional(),
+    experience: z.string().optional(),
+    disabilityType: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     // ---- Mobile number rules ----
