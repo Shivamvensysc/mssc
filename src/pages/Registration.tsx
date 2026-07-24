@@ -886,8 +886,9 @@ export default function RegistrationForm() {
                           >
                             <option value="">Please Select</option>
                             <option value="single">Single</option>
-                            <option value="married">Married</option>
-                            <option value="Divorced">Divorced/Widow</option>
+                            <option value="married">Unmarried</option>
+                            <option value="Divorced">Divorced</option>
+                            <option value="Widowed">Widowed</option>
                              
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
