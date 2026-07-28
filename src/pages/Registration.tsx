@@ -540,6 +540,69 @@ export default function RegistrationForm() {
   };
 
   /** Step 1: validate with Zod, validate backend CAPTCHA, then register the candidate in Cognito. */
+  // const handleStep1Submit = async () => {
+    
+  //   // =========================================================================
+  //   // This backend Date submission check is kept as an extra safeguard layer
+  //   // =========================================================================
+  //   if (formData.dobDay && formData.dobMonth && formData.dobYear) {
+  //     const day = parseInt(formData.dobDay, 10);
+  //     const year = parseInt(formData.dobYear, 10);
+      
+  //     const isNumericMonth = !isNaN(Number(formData.dobMonth));
+  //     const monthIndex = isNumericMonth
+  //       ? parseInt(formData.dobMonth, 10) - 1
+  //       : new Date(`${formData.dobMonth} 1, 2000`).getMonth();
+
+  //     const dateObj = new Date(year, monthIndex, day);
+      
+  //     const isValidDate =
+  //       dateObj.getFullYear() === year &&
+  //       dateObj.getMonth() === monthIndex &&
+  //       dateObj.getDate() === day;
+
+  //     if (!isValidDate) {
+  //       setErrors((prev) => ({
+  //         ...prev,
+  //         dobDay: "Invalid date selected .",
+  //       }));
+  //       toast.error('Please select a valid Date of Birth.');
+  //       return;
+  //     }
+  //   }
+  //   // =========================================================================
+
+  //   const result = registrationSchema.safeParse(formData);
+
+  //   if (!result.success) {
+  //     setErrors(flattenZodErrors(result.error));
+  //     toast.error('Please fix the highlighted fields before continuing.');
+  //     return;
+  //   }
+
+  //   // Await Backend validation
+  //   const isCaptchaValid = await validateCaptcha();
+  //   if (!isCaptchaValid) {
+  //     return; // Stop the registration if CAPTCHA validation fails
+  //   }
+
+  //   setErrors({});
+  //   setIsSubmitting(true);
+  //   try {
+  //     await sendOtp(result.data);
+  //     toast.success('OTP sent! Please check your email to verify your account.');
+  //     setOtpValue('');
+  //     setOtpError(undefined);
+  //     setShowOtpModal(true);
+  //   } catch (err) {
+  //     const message = err instanceof Error ? err.message : 'Something went wrong while registering. Please try again.';
+  //     toast.error(message);
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
+ /** Step 1: validate with Zod, validate backend CAPTCHA, then register the candidate in Cognito. */
   const handleStep1Submit = async () => {
     
     // =========================================================================
@@ -569,6 +632,30 @@ export default function RegistrationForm() {
         toast.error('Please select a valid Date of Birth.');
         return;
       }
+
+      // =====================================================================
+      // ADDED LOGIC: Max Age Validation (38 Years)
+      // =====================================================================
+      const today = new Date();
+      let age = today.getFullYear() - dateObj.getFullYear();
+      const monthDiff = today.getMonth() - dateObj.getMonth();
+      
+      // If the current month is before the birth month, OR 
+      // it's the birth month but the current day is before the birth day, 
+      // subtract 1 from the age.
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateObj.getDate())) {
+        age--;
+      }
+
+      if (age > 38) {
+        setErrors((prev) => ({
+          ...prev,
+          dobYear: "Age cannot exceed 38 years.",
+        }));
+        toast.error('You must be 38 years old or younger to apply.');
+        return;
+      }
+      // =====================================================================
     }
     // =========================================================================
 
@@ -782,7 +869,7 @@ export default function RegistrationForm() {
                           className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           disabled={loading.posts}
                         >
-                          <option value="">{loading.posts ? 'Loading...' : 'Please Select'}</option>
+                          <option value="" hidden disabled>{loading.posts ? 'Loading...' : 'Please Select'}</option>
                           {posts.map((post: any, idx: number) => {
                             const label = post.postName ?? post.name ?? post.title ?? post.post_name ?? '';
                             const key = post.postId ?? post.id ?? post.post_id ?? idx;
@@ -866,7 +953,7 @@ export default function RegistrationForm() {
                             onChange={handleInputChange}
                             className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           >
-                            <option value="">Please Select</option>
+                            <option value="" disabled hidden>Please Select</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
                              <option value="other">Transgender</option>
@@ -884,7 +971,7 @@ export default function RegistrationForm() {
                             onChange={handleInputChange}
                             className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           >
-                            <option value="">Please Select</option>
+                            <option value="" disabled hidden>Please Select</option>
                             <option value="single">Single</option>
                             <option value="married">Unmarried</option>
                             <option value="Divorced">Divorced</option>
@@ -907,7 +994,9 @@ export default function RegistrationForm() {
                           className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           disabled={loading.categories}
                         >
-                          <option value="">{loading.categories ? 'Loading...' : 'Please Select'}</option>
+                          <option value="" disabled hidden>
+                            {loading.categories ? 'Loading...' : 'Please Select'}
+                          </option>
                           {categories.map((category) => (
                             <option key={category.value} value={category.label}>
                               {category.label}
@@ -956,7 +1045,9 @@ export default function RegistrationForm() {
                                 className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                                 disabled={loading.disabilities}
                               >
-                                <option value="">{loading.disabilities ? 'Loading...' : 'Please Select'}</option>
+                                <option value="" disabled hidden>
+                                  {loading.disabilities ? 'Loading...' : 'Please Select'}
+                                </option>
                                 {disabilities.map((disability: any, idx: number) => {
                                   const label = disability.disabilityName ?? disability.name ?? disability.label ?? disability.type ?? '';
                                   const key = disability.disabilityId ?? disability.id ?? idx;
@@ -1171,7 +1262,9 @@ export default function RegistrationForm() {
                           className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           disabled={loading.districts}
                         >
-                          <option value="">{loading.districts ? 'Loading...' : 'Please Select'}</option>
+                          <option value="" disabled hidden>
+                            {loading.districts ? 'Loading...' : 'Please Select'}
+                          </option>
                           {districts.map((district) => (
                             <option key={district.districtId} value={district.districtName}>
                               {district.districtName}
