@@ -1598,7 +1598,7 @@ export function LoginPage() {
               
               <div className="mb-10 text-center">
                 <h2 className="font-headline-lg text-3xl text-slate-900 mb-3 font-bold tracking-tight">Welcome</h2>
-                <p className="font-body-md text-slate-500 text-sm">Let's get started with your account.</p>
+                <p className="font-body-md text-slate-500 text-sm">Access Your Account.</p>
               </div>
 
               <form className="space-y-5" onSubmit={handleLoginSubmit}>
