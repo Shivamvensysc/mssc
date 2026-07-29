@@ -33,9 +33,7 @@ interface RegistrationFormData {
   dobMonth: string;
   dobYear: string;
   mobile: string;
-  confirmMobile: string;
   email: string;
-  confirmEmail: string;
   district: string;
   captchaInput: string;
   govEmployee: string;
@@ -77,7 +75,7 @@ interface Disability {
 const initialFormData: RegistrationFormData = {
   postName: '',
   name: '',
-  citizen: '',
+  citizen: 'Yes',
   dialect: '',
   residencyConfirmed: false,
   gender: '',
@@ -90,9 +88,7 @@ const initialFormData: RegistrationFormData = {
   dobMonth: '',
   dobYear: '',
   mobile: '',
-  confirmMobile: '',
   email: '',
-  confirmEmail: '',
   district: '',
   captchaInput: '',
   govEmployee: '',
@@ -279,6 +275,8 @@ export default function RegistrationForm() {
           : [];
         if (rawList.length > 0 || postsData?.success) {
           setPosts(rawList);
+          const firstPostName = rawList[0]?.postName ?? rawList[0]?.name ?? rawList[0]?.title ?? rawList[0]?.post_name ?? '';
+          setFormData(prev => ({ ...prev, postName: firstPostName }));
           setError(prev => ({ ...prev, posts: '' }));
         } else {
           setError(prev => ({ ...prev, posts: 'Failed to load posts' }));
@@ -310,6 +308,70 @@ export default function RegistrationForm() {
     const timer = setInterval(() => setSetPasswordResendCooldown((c) => c - 1), 1000);
     return () => clearInterval(timer);
   }, [setPasswordResendCooldown]);
+
+  // =========================================================================
+  // ADDED LOGIC: Real-time Date of Birth Validation (onChange)
+  // =========================================================================
+  useEffect(() => {
+    const { dobDay, dobMonth, dobYear } = formData;
+    
+    // Only run validation if all three fields have a value selected
+    if (dobDay && dobMonth && dobYear) {
+      const day = parseInt(dobDay, 10);
+      const year = parseInt(dobYear, 10);
+      
+      const isNumericMonth = !isNaN(Number(dobMonth));
+      const monthIndex = isNumericMonth
+        ? parseInt(dobMonth, 10) - 1
+        : new Date(`${dobMonth} 1, 2000`).getMonth();
+
+      const dobObj = new Date(year, monthIndex, day);
+      
+      // 1. Check if it's a real calendar date (e.g. not Feb 30th)
+      const isValidDate =
+        dobObj.getFullYear() === year &&
+        dobObj.getMonth() === monthIndex &&
+        dobObj.getDate() === day;
+
+      if (!isValidDate) {
+        setErrors((prev) => ({ ...prev, dobDay: "Invalid date selected." }));
+        return;
+      }
+
+      // 2. Check if the date is in the future
+      const today = new Date();
+      if (dobObj > today) {
+        setErrors((prev) => ({ ...prev, dobDay: "Date of birth cannot be in the future." }));
+        return;
+      }
+
+      // 3. Calculate exact age
+      let age = today.getFullYear() - dobObj.getFullYear();
+      const monthDiff = today.getMonth() - dobObj.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobObj.getDate())) {
+        age--;
+      }
+
+      // 4. Apply min/max age rules
+      // NOTE: Your submit handler checks for > 38, but your Zod schema checks for > 60. 
+      // We are using 38 here to match your strict submit logic. Change to 60 if needed.
+      if (age < 18) {
+        setErrors((prev) => ({ ...prev, dobDay: "Candidate must be at least 18 years old." }));
+      } else if (age > 38) {
+        setErrors((prev) => ({ ...prev, dobDay: "Age cannot exceed 38 years." }));
+      } else {
+        // If everything is valid, clear the errors
+        setErrors((prev) => ({ 
+          ...prev, 
+          dobDay: undefined, 
+          dobMonth: undefined, 
+          dobYear: undefined 
+        }));
+      }
+    }
+  }, [formData.dobDay, formData.dobMonth, formData.dobYear]);
+  // =========================================================================
 
   // =========================================================================
   // ADDED LOGIC: Dynamically calculate max valid days for the chosen month/year
@@ -445,9 +507,7 @@ export default function RegistrationForm() {
     setErrors((prev) => ({
       ...prev,
       mobile: getMobileHint(value),
-      confirmMobile: prev.confirmMobile !== undefined || formData.confirmMobile
-        ? getConfirmMobileHint(formData.confirmMobile, value)
-        : prev.confirmMobile,
+      // DELETED confirmMobile error logic here
     }));
   };
 
@@ -476,15 +536,13 @@ export default function RegistrationForm() {
     return undefined;
   };
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+ const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, email: value }));
     setErrors((prev) => ({
       ...prev,
       email: getEmailHint(value),
-      confirmEmail: formData.confirmEmail
-        ? getConfirmEmailHint(formData.confirmEmail, value)
-        : prev.confirmEmail,
+      // DELETED confirmEmail error logic here
     }));
   };
 
@@ -863,12 +921,13 @@ export default function RegistrationForm() {
                       <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Post Name<RequiredMark /></label>
                       <div className="relative">
                         <select
-                          name="postName"
-                          value={formData.postName}
-                          onChange={handleInputChange}
-                          className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
-                          disabled={loading.posts}
-                        >
+  name="postName"
+  value={formData.postName}
+  onChange={handleInputChange}
+  // Added bg-gray-100 and cursor-not-allowed for visual feedback
+  className="w-full py-2.5 px-4 bg-gray-100 border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none cursor-not-allowed text-gray-500"
+  disabled // <-- CHANGE THIS: Permanently disabled
+>
                           <option value="" hidden disabled>{loading.posts ? 'Loading...' : 'Please Select'}</option>
                           {posts.map((post: any, idx: number) => {
                             const label = post.postName ?? post.name ?? post.title ?? post.post_name ?? '';
@@ -892,17 +951,19 @@ export default function RegistrationForm() {
                       <p className="font-label-md text-[14px] font-semibold text-on-surface-variant">Are you citizen of india?<RequiredMark /></p>
                       <div className="flex gap-6">
                         {['Yes'].map((opt) => (
-                          <label key={opt} className="flex items-center gap-2 cursor-pointer group">
-                            <input
-                              type="radio"
-                              name="citizen"
-                              value={opt}
-                              checked={formData.citizen === opt}
-                              onChange={handleInputChange}
-                              className="w-5 h-5 text-primary border-outline focus:ring-primary"
-                            />
-                            <span className="font-body-md group-hover:text-primary transition-colors">{opt}</span>
-                          </label>
+                          <label key={opt} className="flex items-center gap-2 cursor-not-allowed group">
+  <input
+    type="radio"
+    name="citizen"
+    value={opt}
+    checked={formData.citizen === opt}
+    onChange={handleInputChange}
+    disabled // <-- ADD THIS: Permanently disables the radio button
+    className="w-5 h-5 text-primary border-outline disabled:opacity-60 disabled:cursor-not-allowed"
+  />
+  {/* Added opacity for disabled text appearance */}
+  <span className="font-body-md text-gray-500">{opt}</span>
+</label>
                         ))}
                       </div>
                       <FieldError message={errors.citizen} />
@@ -1206,22 +1267,8 @@ export default function RegistrationForm() {
                       <p className="text-on-surface-variant/70 font-label-sm text-[12px] mt-2">[Please keep this Mobile No. active for receiving communications]</p>
                     </div>
 
-                    <div>
-                      <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Confirm Mobile No.<RequiredMark /></label>
-                      <input
-                        type="tel"
-                        name="confirmMobile"
-                        value={formData.confirmMobile}
-                        onChange={handleConfirmMobileChange}
-                        onPaste={blockPaste}
-                        autoComplete="off"
-                        className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
-                        placeholder="Re-enter your mobile number"
-                        maxLength={10}
-                        inputMode="numeric"
-                      />
-                      <FieldError message={errors.confirmMobile} />
-                    </div>
+                    
+                    
 
                     <div>
                       <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">E-mail Address<RequiredMark /></label>
@@ -1235,21 +1282,6 @@ export default function RegistrationForm() {
                       />
                       <FieldError message={errors.email} />
                       <p className="text-on-surface-variant/70 font-label-sm text-[12px] mt-2">[Note: Please keep this Email ID active for the Recruitment process — your OTP is sent here]</p>
-                    </div>
-
-                    <div>
-                      <label className="block font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Confirm Email Address<RequiredMark /></label>
-                      <input
-                        type="email"
-                        name="confirmEmail"
-                        value={formData.confirmEmail}
-                        onChange={handleConfirmEmailChange}
-                        onPaste={blockPaste}
-                        autoComplete="off"
-                        className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
-                        placeholder="Re-enter your email address"
-                      />
-                      <FieldError message={errors.confirmEmail} />
                     </div>
 
                     <div>

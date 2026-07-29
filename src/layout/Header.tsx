@@ -7,16 +7,20 @@ export const Header: React.FC = () => {
   return (
     <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+        
         {/* Portal Logo / Identity */}
         <Link to="/" className="flex items-center space-x-3">
-          <div className="bg-emerald-700 text-white p-2.5 rounded-lg font-bold text-xl tracking-wider">MSSC</div>
+          <img 
+            src="/mssc.png" 
+            alt="MSSC Logo" 
+            className="h-12 w-auto object-contain" 
+          />
+      
           <div>
             <span className="text-md font-bold text-slate-900 block leading-tight">MANIPUR STAFF SELECTION COMMISSION</span>
           </div>
         </Link>
         
-      
-
         {/* Desktop Authentication Controls */}
         <div className="hidden lg:flex items-center space-x-3 text-sm">
           <Link to="/login" className="text-emerald-700 hover:text-emerald-800 font-semibold transition"> Login</Link>
