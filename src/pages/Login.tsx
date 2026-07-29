@@ -1597,7 +1597,7 @@ export function LoginPage() {
             <div className="w-full max-w-[480px] bg-white shadow-[0px_20px_40px_rgba(0,0,0,0.15)] rounded-[2rem] px-8 py-12 md:px-14 md:py-16 border border-slate-100">
               
               <div className="mb-10 text-center">
-                <h2 className="font-headline-lg text-3xl text-slate-900 mb-3 font-bold tracking-tight">Welcome Back</h2>
+                <h2 className="font-headline-lg text-3xl text-slate-900 mb-3 font-bold tracking-tight">Welcome</h2>
                 <p className="font-body-md text-slate-500 text-sm">Let's get started with your account.</p>
               </div>
 

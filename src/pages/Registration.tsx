@@ -4205,7 +4205,7 @@ export default function RegistrationForm() {
                     </div>
 
                     <div className="space-y-4">
-                      <p className="font-label-md text-[14px] font-semibold text-on-surface-variant">Are you State Government Employees?<RequiredMark /></p>
+                      <p className="font-label-md text-[14px] font-semibold text-on-surface-variant">Are you a State Government Employee?<RequiredMark /></p>
                       <div className="flex gap-6">
                         {['Yes', 'No'].map((opt) => (
                           <label key={`gov-${opt}`} className="flex items-center gap-2 cursor-pointer group">

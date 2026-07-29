@@ -3235,12 +3235,12 @@ import {
 // DESIGN TOKENS
 // ==========================================
 const theme = {
-  navy: '#1B5E3F',
-  navyDark: '#0F3D28',
-  navyLight: '#3D8A63',
+  navy: '#0076b6',
+  navyDark: '#0076b6',
+  navyLight: '#0076b6',
   gold: '#B8873D',
   goldLight: '#F3E7D3',
-  success: '#2F7A55',
+  success: '#0076b6',
   error: '#C0392B',
   bg: '#F7F8FA',
   surface: '#FFFFFF',
