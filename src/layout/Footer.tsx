@@ -19,7 +19,7 @@ export const Footer: React.FC = () => {
             </span>
           </div>
           <p className="text-white/90 text-xs">
-            Official statutory recruitment allocation systems for the Directorate of Education (S), Government of Manipur.
+           Official Statutory Recruitment Portal of the Directorate of Education (S), Government of Manipur.
           </p>
         </div>
 

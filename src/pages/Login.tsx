@@ -1667,7 +1667,7 @@ export function LoginPage() {
 
               <div className="my-4 flex items-center gap-4">
                 <div className="flex-grow h-px bg-slate-200"></div>
-                <span className="font-label-sm text-[11px] text-slate-400 uppercase tracking-wider font-bold">OR</span>
+                <span className="font-label-sm text-[11px] text-slate-400 uppercase tracking-wider font-bold">or</span>
                 <div className="flex-grow h-px bg-slate-200"></div>
               </div>
 
