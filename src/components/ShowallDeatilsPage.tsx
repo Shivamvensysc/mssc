@@ -22,14 +22,12 @@ import {
 import { generateApplicationPDF } from '../lib/Pdfgenerator';
 
 // ==========================================
-// DESIGN TOKENS — extends the existing portal theme
-// (kept identical to MultiStepForm so this page feels
-// like the natural conclusion of the same journey)
+// DESIGN TOKENS — Updated to #0076b6 color scheme
 // ==========================================
 const theme = {
-  navy: '#1B5E3F',
-  navyDark: '#0F3D28',
-  navyLight: '#3D8A63',
+  navy: '#0076b6',        // Primary Blue
+  navyDark: '#005a8b',    // Darker Blue for contrasts/borders
+  navyLight: '#3391c5',   // Lighter Blue
   gold: '#B8873D',
   goldLight: '#F3E7D3',
   goldDeep: '#8A6416',
@@ -45,7 +43,7 @@ const theme = {
 };
 
 // ==========================================
-// TYPES — mirrors the raw `/application/steps/all` response
+// TYPES
 // ==========================================
 interface CandidateDetails {
   registrationNumber?: string;
@@ -78,11 +76,17 @@ interface StepOne {
   personalInfo?: Record<string, any>;
   address?: {
     permanent?: Record<string, any>;
+    correspond?: Record<string, any>; // Added this to match API
     correspondence?: Record<string, any>;
   };
   education?: Record<string, { college?: string; board?: string; year?: string; percentage?: string }>;
   teachereligibilit?: Record<string, any>;
-  experience?: {
+  // Updated to support the array format returning from the API
+  experience?: Array<{
+    duration?: string;
+    designation?: string;
+    reasonLeaving?: string;
+  }> | {
     hasExperience?: boolean;
     employerDesignation?: string;
     servicePeriodMonths?: number | null;
@@ -285,12 +289,14 @@ function AddressBlock({ title, address }: { title: string; address?: Record<stri
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <Field label="Village / Street" value={address.street || address.village} />
-        <Field label="Post" value={address.post} />
+        
+        
         <Field label="City / Town" value={address.city} />
         <Field label="District" value={address.district} />
         <Field label="State" value={address.state} />
         <Field label="PIN Code" value={address.pincode} />
-        <Field label="Country" value={address.country} />
+      
+      
         <Field label="Police Station" value={address.policeStation} />
       </div>
     </div>
@@ -311,7 +317,6 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
   const candidate = applicationData?.candidateDetails || {};
   const personalInfo = step1.personalInfo || {};
 
-  // Merge step0 (initial registration) with step1 (detailed form) — step1 wins when present.
   const merged = useMemo(
     () => ({
       name: personalInfo.name || step0.fullName || '—',
@@ -333,7 +338,8 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
   );
 
   const permanentAddress = step1.address?.permanent || step0.address?.permanent;
-  const correspondAddress = step1.address?.correspondence || step0.address?.correspondence;
+  // Fixed correspondence check to match 'correspond' from API response
+  const correspondAddress = step1.address?.correspond || step1.address?.correspondence || step0.address?.correspondence;
 
   const educationRows = ['10th', '12th', 'graduation', 'postGraduation'] as const;
   const educationLabels: Record<(typeof educationRows)[number], string> = {
@@ -344,9 +350,12 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
   };
 
   const teacherEligibility = step1.teachereligibilit || {};
-  const hasExperience = step1.experience?.hasExperience;
+  
+  // Experience check updated to handle Array structure returned from API
+  const rawExperience = step1.experience;
+  const isExperienceArray = Array.isArray(rawExperience);
+  const hasExperience = isExperienceArray ? rawExperience.length > 0 : Boolean((rawExperience as any)?.hasExperience);
 
-  // Document keys: fixed known list first, then any experienceCert_N found dynamically.
   const knownDocKeys = Object.keys(DOC_LABELS).filter((k) => k in step2);
   const experienceCertKeys = Object.keys(step2)
     .filter((k) => k.startsWith(EXPERIENCE_CERT_PREFIX))
@@ -361,15 +370,13 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      /* clipboard unavailable */
+      // clipboard unavailable
     }
   };
 
   const handleDownload = async () => {
     try {
       setIsDownloading(true);
-      // applicationData is the "data" object from your API response, 
-      // which perfectly matches the ApiData interface expected by the generator.
       await generateApplicationPDF(applicationData as any); 
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -381,7 +388,6 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
 
   return (
     <div className="min-h-screen py-10 px-4" style={{ backgroundColor: theme.bg }}>
-      {/* Print-only styling */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -564,11 +570,23 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
         {/* ============ WORK EXPERIENCE ============ */}
         <SectionCard icon={Briefcase} title="Work Experience">
           {hasExperience ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-              <Field label="Designation" value={step1.experience?.employerDesignation} />
-              <Field label="Service Period" value={step1.experience?.servicePeriodMonths ? `${step1.experience.servicePeriodMonths} months` : undefined} />
-              <Field label="Reason for Leaving" value={step1.experience?.reasonForLeaving} />
-            </div>
+            isExperienceArray ? (
+              <div className="flex flex-col gap-6">
+                {(rawExperience as any[]).map((exp, idx) => (
+                  <div key={idx} className="grid grid-cols-2 sm:grid-cols-3 gap-5 pb-5 border-b border-gray-100 last:border-b-0 last:pb-0">
+                    <Field label="Designation" value={exp.designation} />
+                    <Field label="Service Period" value={exp.duration ? `${exp.duration} months` : undefined} />
+                    <Field label="Reason for Leaving" value={exp.reasonLeaving} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                <Field label="Designation" value={(rawExperience as any).employerDesignation} />
+                <Field label="Service Period" value={(rawExperience as any).servicePeriodMonths ? `${(rawExperience as any).servicePeriodMonths} months` : undefined} />
+                <Field label="Reason for Leaving" value={(rawExperience as any).reasonForLeaving} />
+              </div>
+            )
           ) : (
             <p className="text-sm" style={{ color: theme.textMuted }}>
               No prior work experience declared.
@@ -608,8 +626,8 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
                 <span
                   className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full"
                   style={{
-                    backgroundColor: step3.status === 'success' || step3.status === 'paid' ? theme.successBg : theme.goldLight,
-                    color: step3.status === 'success' || step3.status === 'paid' ? theme.success : theme.goldDeep,
+                    backgroundColor: step3.status === 'success' || step3.status === 'paid' || step3.status === 'completed' ? theme.successBg : theme.goldLight,
+                    color: step3.status === 'success' || step3.status === 'paid' || step3.status === 'completed' ? theme.success : theme.goldDeep,
                   }}
                 >
                   <BadgeCheck size={12} /> {titleCase(step3.status)}
