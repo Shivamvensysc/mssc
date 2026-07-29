@@ -329,14 +329,16 @@ export const registrationSchema = z
     dobYear: z.string().min(1, "Year is required"),
 
     mobile: z.string().trim().min(1, "Mobile number is required"),
-    confirmMobile: z.string().trim().min(1, "Please confirm your mobile number"),
+    
+    
 
     email: z
       .string()
       .trim()
       .min(1, "Email is required")
       .regex(EMAIL_REGEX, "Enter a valid email address"),
-    confirmEmail: z.string().trim().min(1, "Please confirm your email address"),
+    
+      
 
     district: z.string().trim().min(1, "Please select a district"),
 
@@ -364,26 +366,11 @@ export const registrationSchema = z
       });
     }
 
-    // ---- Confirm mobile must match exactly ----
-    if (data.confirmMobile && data.mobile.trim() !== data.confirmMobile.trim()) {
-      ctx.addIssue({
-        path: ["confirmMobile"],
-        code: z.ZodIssueCode.custom,
-        message: "Mobile numbers do not match.",
-      });
-    }
+   
+    
 
-    // ---- Confirm email must match (case-insensitive) ----
-    if (
-      data.confirmEmail &&
-      data.email.trim().toLowerCase() !== data.confirmEmail.trim().toLowerCase()
-    ) {
-      ctx.addIssue({
-        path: ["confirmEmail"],
-        code: z.ZodIssueCode.custom,
-        message: "Email addresses do not match.",
-      });
-    }
+   
+    
 
     // ---- Date of birth rules ----
     const day = parseInt(data.dobDay, 10);

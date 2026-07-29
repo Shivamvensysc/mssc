@@ -1033,10 +1033,10 @@ export default function RegistrationForm() {
                             className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-body-md outline-none"
                           >
                             <option value="" disabled hidden>Please Select</option>
-                            <option value="single">Single</option>
+                            <option value="single">Married</option>
                             <option value="married">Unmarried</option>
-                            <option value="Divorced">Divorced</option>
-                            <option value="Widowed">Widowed</option>
+                            <option value="Divorced">Widows/Divorced women/women judicialy separated and who are not remarried</option>
+                          
                              
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
