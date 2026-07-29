@@ -4,6 +4,7 @@ import RegistrationForm from "./pages/Registration";
 import { LoginPage, ForgotPasswordPage } from "./pages/Login";
 import ApplicationForm from "./pages/Application";
 import { HomePage } from "./pages/HomePage";
+import AdminLoginPage from "./components/admin/adminlogin";
 import "./App.css";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           {/* Default route (/) */}
           <Route index element={<HomePage />} />
           <Route path="/register" element={<RegistrationForm/>} />
+          <Route path="/admin-login" element={<AdminLoginPage />} />
 
           <Route path="login" element={<LoginPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
