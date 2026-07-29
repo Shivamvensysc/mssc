@@ -473,7 +473,7 @@ export default function MultiStepForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [documentErrors, setDocumentErrors] = useState<Record<string, boolean>>({});
   const [showFinalDetailsPage, setShowFinalDetailsPage] = useState(false);
-  const [rawApplicationData, setRawApplicationData] = useState(null);
+  const [rawApplicationData, setRawApplicationData] = useState<any>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
@@ -953,9 +953,9 @@ export default function MultiStepForm() {
     );
   }
 
-  if (showFinalDetailsPage) {
-  return <ShowallDeatilsPage applicationData={rawApplicationData} />;
-}
+  if (showFinalDetailsPage && rawApplicationData) {
+    return <ShowallDeatilsPage applicationData={rawApplicationData} />;
+  }
 
   return (
     <div
