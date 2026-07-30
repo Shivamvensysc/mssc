@@ -144,7 +144,6 @@ const personalInfoValidationSchema = z
       });
     }
   });
-
 const teacherEligibilityValidationSchema = z
   .object({
     tenPlusTwoTrack: z.string().min(1, '10+2 qualification track is required'),
@@ -164,14 +163,30 @@ const teacherEligibilityValidationSchema = z
     tet1Passed: z.boolean(),
   })
   .superRefine((val, ctx) => {
-    if (!val.trainingNotAvailable && !val.crossDisabilityPeriod?.trim()) {
+    const hasPeriod = !!val.crossDisabilityPeriod?.trim();
+
+    // 1. Must be provided if they didn't check the deferment box
+    if (!val.trainingNotAvailable && !hasPeriod) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Training period is required unless deferment is acknowledged',
         path: ['crossDisabilityPeriod'],
       });
     }
+
+    // 2. If a value is provided, it cannot be less than 6 months
+    if (hasPeriod) {
+      const months = parseInt(val.crossDisabilityPeriod, 10);
+      if (months < 6) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Training period cannot be less than 6 months',
+          path: ['crossDisabilityPeriod'],
+        });
+      }
+    }
   });
+
 
 // Base schema for experience item - fields are no longer strictly required at this level
 const experienceItemSchema = z.object({
