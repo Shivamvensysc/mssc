@@ -3109,6 +3109,8 @@
 //     </div>
 //   );
 // }
+
+
 import React, { useState, useId, useEffect } from 'react';
 import axios from 'axios';
 import { z } from 'zod';
@@ -3682,7 +3684,8 @@ export default function MultiStepForm() {
               if (pInfo.motherName) personalInfoUpdates.motherName = pInfo.motherName;
               if (pInfo.nationality) personalInfoUpdates.nationality = pInfo.nationality;
               if (pInfo.reservationCategory) personalInfoUpdates.reservationCategory = pInfo.reservationCategory;
-              if (pInfo.pwdStatus) personalInfoUpdates.pwdStatus = pInfo.pwdStatus;
+              // if (pInfo.pwdStatus) personalInfoUpdates.pwdStatus = pInfo.pwdStatus;
+              if (pInfo.pwdStatus && step0.isPwd === undefined) personalInfoUpdates.pwdStatus = pInfo.pwdStatus;
               if (pInfo.typeOfDisability) personalInfoUpdates.typeOfDisability = pInfo.typeOfDisability;
               if (pInfo.is40Percent) personalInfoUpdates.is40Percent = pInfo.is40Percent;
               // CHANGE IT TO:
