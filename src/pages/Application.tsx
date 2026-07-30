@@ -144,6 +144,7 @@ const personalInfoValidationSchema = z
       });
     }
   });
+
 const teacherEligibilityValidationSchema = z
   .object({
     tenPlusTwoTrack: z.string().min(1, '10+2 qualification track is required'),
@@ -163,37 +164,17 @@ const teacherEligibilityValidationSchema = z
     tet1Passed: z.boolean(),
   })
   .superRefine((val, ctx) => {
-    const hasPeriod = !!val.crossDisabilityPeriod?.trim();
-
-    // 1. Must be provided if they didn't check the deferment box
-    if (!val.trainingNotAvailable && !hasPeriod) {
+    if (!val.trainingNotAvailable && !val.crossDisabilityPeriod?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Training period is required unless deferment is acknowledged',
         path: ['crossDisabilityPeriod'],
       });
     }
-
-    // 2. If a value is provided, it cannot be less than 6 months
-    if (hasPeriod) {
-      const months = parseInt(val.crossDisabilityPeriod, 10);
-      if (months < 6) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Training period cannot be less than 6 months',
-          path: ['crossDisabilityPeriod'],
-        });
-      }
-    }
   });
 
 
-// Base schema for experience item - fields are no longer strictly required at this level
-const experienceItemSchema = z.object({
-  designation: z.string().trim().default(''),
-  duration: z.string().trim().default(''),
-  reasonLeaving: z.string().optional().default(''),
-});
+  
 
 // Full Step 1 schema
 const step1ValidationSchema = z.object({
@@ -210,47 +191,10 @@ const step1ValidationSchema = z.object({
     postGraduation: educationLevelValidationSchema('Post-Graduation', false),
   }),
   teacherEligibility: teacherEligibilityValidationSchema,
-  experience: z.array(experienceItemSchema),
-}).superRefine((val, ctx) => {
-  // Check if they are a state government employee
-  const isGovEmployee = val.personalInfo.stateGovEmployee === 'yes';
+  
+  
+})
 
-  // Helper to identify if an experience row is completely blank
-  const isExpEmpty = (exp: any) => !exp.designation && !exp.duration && !exp.reasonLeaving;
-
-  const filledExperiences = val.experience.filter(exp => !isExpEmpty(exp));
-
-  // 1. Mandatory check if state government employee
-  if (isGovEmployee && filledExperiences.length === 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Work experience is mandatory for State Government Employees',
-      path: ['experience', 0, 'designation'],
-    });
-  }
-
-  // 2. Validate filled rows (or rows they started filling)
-  val.experience.forEach((exp, index) => {
-    // If it's empty, we skip validation for this row (already caught above if mandatory)
-    if (isExpEmpty(exp)) return;
-
-    if (!exp.designation) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Designation is required', path: ['experience', index, 'designation'] });
-    } else if (!TEXT_ONLY_REGEX.test(exp.designation)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Designation must contain only letters, numbers are not allowed', path: ['experience', index, 'designation'] });
-    }
-
-    if (!exp.duration) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Service period is required', path: ['experience', index, 'duration'] });
-    } else if (!NUMERIC_ONLY_REGEX.test(exp.duration)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Service period must contain only numbers', path: ['experience', index, 'duration'] });
-    }
-
-    if (exp.reasonLeaving && !TEXT_ONLY_REGEX.test(exp.reasonLeaving)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Reason for leaving must contain only letters, numbers are not allowed', path: ['experience', index, 'reasonLeaving'] });
-    }
-  });
-});
 
 type FieldErrors = {
   personalInfo?: Partial<Record<string, string>>;
@@ -260,7 +204,7 @@ type FieldErrors = {
   };
   education?: Partial<Record<string, Partial<Record<string, string>>>>;
   teacherEligibility?: Partial<Record<string, string>>;
-  experience?: Array<Partial<Record<string, string>>>;
+  
 };
 
 const buildFieldErrorsFromZod = (error: z.ZodError): FieldErrors => {
@@ -363,7 +307,6 @@ interface FormState {
     trainingNotAvailable: boolean;
     tet1Passed: boolean;
   };
-  experience: Experience[];
 }
 
 const emptyAddress: Address = {
@@ -440,14 +383,8 @@ const initialState: FormState = {
     trainingNotAvailable: false,
     tet1Passed: false,
   },
-  experience: [
-    {
-      designation: '',
-      duration: '',
-      certificate: null,
-      reasonLeaving: '',
-    },
-  ],
+  
+  
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -685,16 +622,8 @@ export default function MultiStepForm() {
               };
             }
             
-            // Fill experience from step1
-            let experienceUpdates: any[] = [];
-            if (step1.experience && step1.experience.length > 0) {
-              experienceUpdates = step1.experience.map((exp: any) => ({
-                designation: exp.designation || '',
-                duration: exp.duration || '',
-                reasonLeaving: exp.reasonLeaving || '',
-                certificate: null,
-              }));
-            }
+            
+            
             
             // Update form data
             setFormData((prev) => ({
@@ -706,7 +635,6 @@ export default function MultiStepForm() {
               address: addressUpdates || prev.address,
               education: educationUpdates || prev.education,
               teacherEligibility: teacherEligibilityUpdates || prev.teacherEligibility,
-              experience: experienceUpdates.length > 0 ? experienceUpdates : prev.experience,
             }));
           }
           
@@ -767,14 +695,8 @@ export default function MultiStepForm() {
         trainingNotAvailable: formData.teacherEligibility.trainingNotAvailable,
         tet1Passed: formData.teacherEligibility.tet1Passed,
       },
-      // Filter out empty experience rows before sending to backend
-      experience: formData.experience
-        .filter(exp => exp.designation.trim() !== '' || exp.duration.trim() !== '' || exp.reasonLeaving.trim() !== '')
-        .map((exp) => ({
-          designation: exp.designation,
-          duration: exp.duration,
-          reasonLeaving: exp.reasonLeaving,
-        })),
+      
+      
     };
 
     const response = await api.patch(`${BASE_URL}/auth/candidate/step-1`, step1Payload, {
@@ -804,9 +726,8 @@ export default function MultiStepForm() {
     if (formData.teacherEligibility.dedCert) {                       // <-- add this block
       formDataToSend.append('dedCert', formData.teacherEligibility.dedCert);
     }
-    formData.experience.forEach((exp, index) => {
-      if (exp.certificate) formDataToSend.append(`experienceCert_${index}`, exp.certificate);
-    });
+   
+    
 
     formDataToSend.append('applicationId', applicationId);
 
@@ -865,7 +786,7 @@ export default function MultiStepForm() {
         address: formData.address,
         education: formData.education,
         teacherEligibility: formData.teacherEligibility,
-        experience: formData.experience,
+      
       });
 
       if (!validationResult.success) {
@@ -2212,38 +2133,7 @@ function Step1Application({
     }
   }, [data.address.permanent, data.address.sameAsPermanent]);
 
-  const addExperience = () => {
-    setData((prev) => ({
-      ...prev,
-      experience: [...prev.experience, { designation: '', duration: '', certificate: null, reasonLeaving: '' }],
-    }));
-  };
-
-  const removeExperience = (index: number) => {
-    setData((prev) => ({
-      ...prev,
-      experience: prev.experience.filter((_, i) => i !== index),
-    }));
-  };
-
-  const updateExperience = (index: number, field: keyof Experience, value: any) => {
-    setData((prev) => {
-      const newExperience = [...prev.experience];
-      newExperience[index] = { ...newExperience[index], [field]: value };
-      return { ...prev, experience: newExperience };
-    });
-    if (setErrors) {
-      setErrors((prev) => {
-        if (!prev.experience || !prev.experience[index]) return prev;
-        const nextExperience = [...prev.experience];
-        const entry = { ...nextExperience[index] };
-        delete entry[field as string];
-        nextExperience[index] = entry;
-        return { ...prev, experience: nextExperience };
-      });
-    }
-  };
-
+ 
   const sanitizeTextOnly = (value: string) => value.replace(/[0-9]/g, '');
 
   const genderOptions = ['Male', 'Female', 'Other'];
@@ -2630,69 +2520,8 @@ const isDisabled = (field: string) => {
         </label>
       </FormSection>
 
-      <FormSection number={5} title="Work Experience">
-        <div className="flex justify-end mb-4 -mt-1">
-          <button
-            type="button"
-            onClick={addExperience}
-            className="text-sm font-semibold flex items-center gap-1.5 px-3.5 py-2 rounded-lg transition-colors"
-            style={{ backgroundColor: theme.goldLight, color: theme.navyDark }}
-          >
-            <Plus size={16} /> Add Experience
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {data.experience.map((exp, index) => {
-            // Check if row has been partially filled out
-            const isRowPartiallyFilled = exp.designation.trim() !== '' || exp.duration.trim() !== '' || exp.reasonLeaving.trim() !== '';
-            // If they are a state government employee OR they started filling out this specific row, make it mandatory
-            const isRequired = isGovEmployee || isRowPartiallyFilled;
-
-            return (
-              <div
-                key={index}
-                className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg relative bg-white"
-                style={{ border: `1px solid ${theme.border}` }}
-              >
-                <FormField 
-                  label="Designation" 
-                  value={exp.designation} 
-                  onChange={(e) => updateExperience(index, 'designation', sanitizeTextOnly(e.target.value))} 
-                  required={isRequired} 
-                  error={errors?.experience?.[index]?.designation}
-                />
-                <FormField 
-                  label="Service Period" 
-                  value={exp.duration} 
-                  onChange={(e) => updateExperience(index, 'duration', e.target.value.replace(/\D/g, ''))} 
-                  placeholder="Numbers only, e.g., 24 (months)" 
-                  required={isRequired} 
-                  error={errors?.experience?.[index]?.duration}
-                />
-                <FormField 
-                  label="Reason for Leaving" 
-                  value={exp.reasonLeaving} 
-                  onChange={(e) => updateExperience(index, 'reasonLeaving', sanitizeTextOnly(e.target.value))} 
-                  error={errors?.experience?.[index]?.reasonLeaving}
-                />
-
-                {data.experience.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeExperience(index)}
-                    className="absolute -right-2.5 -top-2.5 p-1.5 rounded-full transition-colors"
-                    style={{ backgroundColor: '#FDEEEC', color: theme.error }}
-                    aria-label="Remove experience"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </FormSection>
+      
+      
     </div>
   );
 }
@@ -2735,33 +2564,17 @@ function Step2Documents({
     if (category === 'documents' || category === 'teacherEligibility') clearDocError(field);
   };
 
-  const updateExperience = (index: number, field: keyof Experience, value: any) => {
-    setData((prev) => {
-      const newExperience = [...prev.experience];
-      newExperience[index] = { ...newExperience[index], [field]: value };
-      return { ...prev, experience: newExperience };
-    });
-  };
 
-  const handleRemoveDocument = (category: keyof FormState, key: string, experienceIndex?: number) => {
-    if (category === 'experience' && experienceIndex !== undefined) {
-      updateExperience(experienceIndex, 'certificate', null);
-      if (setUploadedDocuments) {
-        setUploadedDocuments((prev) => {
-          const next = { ...prev };
-          delete next[`experienceCert_${experienceIndex}`];
-          return next;
-        });
-      }
-    } else {
-      updateField(category, key, null);
-      if (setUploadedDocuments) {
-        setUploadedDocuments((prev) => {
-          const next = { ...prev };
-          delete next[key];
-          return next;
-        });
-      }
+  
+
+  const handleRemoveDocument = (category: keyof FormState, key: string) => {
+    updateField(category, key, null);
+    if (setUploadedDocuments) {
+      setUploadedDocuments((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
     }
   };
 
@@ -2893,37 +2706,8 @@ function Step2Documents({
         </div>
       </FormSection>
 
-      <FormSection number={3} title="Experience Certificates">
-        <div className="space-y-4">
-          {data.experience.map((exp, index) => {
-            const existingExpUrl = uploadedDocuments[`experienceCert_${index}`];
-            return (
-              <div key={index} className="p-4 rounded-lg bg-white" style={{ border: `1px solid ${theme.border}` }}>
-                <p className="text-sm font-semibold mb-4" style={{ color: theme.textPrimary }}>
-                  Experience #{index + 1}
-                  {exp.designation ? ` — ${exp.designation}` : ''}
-                </p>
-                <div className="max-w-md">
-                  <FileUploadField
-                    label="Upload Certificate"
-                    fileName={exp.certificate?.name || (existingExpUrl ? 'Already Uploaded' : undefined)}
-                    fileData={exp.certificate}
-                   onChange={(e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  const errMsg = validateFile(file, 'experienceCert');
-  e.target.value = '';
-  if (errMsg) { showToast?.(errMsg, 'error'); return; }
-  updateExperience(index, 'certificate', file);
-}}
-                    onClear={() => handleRemoveDocument('experience', 'certificate', index)} 
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </FormSection>
+     
+     
     </div>
   );
 }
@@ -3268,62 +3052,7 @@ function Step4Review({
         </div>
       </FormSection>
 
-      <FormSection number={6} title="Work Experience">
-        {data.experience.filter(exp => exp.designation.trim() !== '' || exp.duration.trim() !== '' || exp.reasonLeaving.trim() !== '').length === 0 ? (
-          <p className="text-sm" style={{ color: theme.textMuted }}>
-            No experience added.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {data.experience
-              .filter(exp => exp.designation.trim() !== '' || exp.duration.trim() !== '' || exp.reasonLeaving.trim() !== '')
-              .map((exp, idx) => {
-              const isExpCertUploaded = exp.certificate || uploadedDocuments[`experienceCert_${idx}`];
-              const expCertName = exp.certificate?.name || (uploadedDocuments[`experienceCert_${idx}`] ? 'Uploaded' : null);
-              
-              return (
-                <div key={idx} className="p-3.5 rounded-lg bg-white" style={{ border: `1px solid ${theme.border}` }}>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div>
-                      <span className="text-xs font-bold mb-1 block" style={{ color: theme.textPrimary }}>Designation</span>
-                      <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{exp.designation || '—'}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold mb-1 block" style={{ color: theme.textPrimary }}>Duration</span>
-                      <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{exp.duration || '—'}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold mb-1 block" style={{ color: theme.textPrimary }}>Reason for Leaving</span>
-                      <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{exp.reasonLeaving || '—'}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold mb-1 block" style={{ color: theme.textPrimary }}>Certificate</span>
-                      <p
-                        className="text-sm font-medium flex items-center gap-1"
-                        style={{ color: isExpCertUploaded ? theme.success : theme.error }}
-                      >
-                        {isExpCertUploaded ? (
-                          <>
-                            <CheckCircle size={13} /> 
-                            <span className="truncate max-w-[120px]" title={expCertName || undefined}>
-                              {expCertName || 'Uploaded'}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle size={13} /> Not uploaded
-                          </>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </FormSection>
-
+      
       <div
         className="flex gap-3 items-start p-4 rounded-lg text-sm"
         style={{ backgroundColor: '#FFF8EC', border: '1px solid #EFDCB4', color: '#8A6416' }}
