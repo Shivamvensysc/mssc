@@ -60,7 +60,7 @@ export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])
 
 // Fixed reference date printed on the advertisement ("Dated: 20/07/2026").
 // Age is computed AS ON this date, not the current date.
-export const NOTIFICATION_DATE = new Date(2026, 6, 20); // months are 0-indexed → 6 = July
+export const NOTIFICATION_DATE = new Date(2026, 7, 22); // months are 0-indexed → 6 = July
 
 export const MIN_AGE = 18; // not relaxable per the advertisement
 const BASE_MAX_AGE = 38; // before any relaxation
