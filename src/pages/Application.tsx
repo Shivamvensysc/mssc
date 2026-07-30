@@ -320,7 +320,7 @@ interface FormState {
     photograph: File | null;
     livePhoto: File | null;
     signature: File | null;
-    eligibilityCert: File | null;
+    // eligibilityCert: File | null;
     permanentResCert: File | null;
     domicileCert: File | null;
    '10thmarksheet': File | null; 
@@ -397,7 +397,7 @@ const initialState: FormState = {
     photograph: null,
     livePhoto: null,
     signature: null,
-    eligibilityCert: null,
+    // eligibilityCert: null,
     permanentResCert: null,
     domicileCert: null,
     '10thmarksheet': null, 
@@ -445,7 +445,7 @@ const FIELD_LABELS: Record<string, string> = {
   photograph: 'Photograph',
   livePhoto: 'Live Photo',
   signature: 'Signature',
-  eligibilityCert: 'Eligibility Certificate',
+  // eligibilityCert: 'Eligibility Certificate',
   permanentResCert: 'Permanent Residence Certificate',
   domicileCert: 'Domicile Certificate',
   '10thmarksheet': '10th Marksheet', 
@@ -470,6 +470,22 @@ import api from '../api/interceptor'
 
 const labelFor = (key: string) =>
   FIELD_LABELS[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+
+const MAX_FILE_SIZE_BYTES = 250 * 1024; // 250KB
+const IMAGE_ONLY_DOC_FIELDS = ['photograph', 'signature'];
+
+const validateFile = (file: File, key: string): string | null => {
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return `${labelFor(key)} must be 250KB or smaller.`;
+  }
+  if (IMAGE_ONLY_DOC_FIELDS.includes(key)) {
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      return `${labelFor(key)} must be a JPG, JPEG, or PNG image only.`;
+    }
+  }
+  return null;
+};
 
 // --- API Service ---
 const apiService = {
@@ -869,7 +885,7 @@ export default function MultiStepForm() {
         setIsProcessing(false);
       }
    } else if (step === 2) {
-      const requiredDocs = ['photograph', 'signature','10thmarksheet'];
+      const requiredDocs = ['photograph', 'signature','10thmarksheet', '12thmarksheet', 'permanentResCert', 'domicileCert'];
       if (formData.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
       if (formData.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
 
@@ -1027,6 +1043,7 @@ export default function MultiStepForm() {
               setErrors={setDocumentErrors}
               uploadedDocuments={uploadedDocuments}
               setUploadedDocuments={setUploadedDocuments}
+              showToast={showToast}
             />
           )}
           {step === 3 && <Step3Payment 
@@ -1774,6 +1791,7 @@ function FileUploadField({
   onClear,
   disabled = false,
   error = false,
+  accept = '.jpeg,.jpg,.png,.pdf',
 }: {
   label: string;
   required?: boolean;
@@ -1783,6 +1801,7 @@ function FileUploadField({
   onClear: () => void;
   disabled?: boolean;
   error?: boolean;
+  accept?: string; 
 }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -1863,7 +1882,7 @@ function FileUploadField({
                 type="file"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 onChange={onChange}
-                accept=".jpeg,.jpg,.png,.pdf"
+                accept={accept}  
               />
             )}
             
@@ -1874,9 +1893,8 @@ function FileUploadField({
                 {disabled ? 'No file uploaded' : 'Choose a file or drag & drop it here'}
               </p>
               
-              <p className="text-xs mb-4 font-medium" style={{ color: theme.textMuted }}>
-                JPEG, PNG, PDF formats, up to 5MB
-              </p>
+              
+              
               
               {!disabled && (
                 <div 
@@ -2677,6 +2695,7 @@ function Step2Documents({
   setErrors,
   uploadedDocuments = {},
   setUploadedDocuments, 
+  showToast, 
 }: {
   data: FormState;
   setData: React.Dispatch<React.SetStateAction<FormState>>;
@@ -2684,6 +2703,7 @@ function Step2Documents({
   setErrors?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   uploadedDocuments?: Record<string, string>;
   setUploadedDocuments?: React.Dispatch<React.SetStateAction<Record<string, string>>>; 
+  showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }) {
   const clearDocError = (key: string) => {
     if (!setErrors) return;
@@ -2733,7 +2753,7 @@ function Step2Documents({
     }
   };
 
-  const requiredDocs = ['photograph', 'signature', '10thmarksheet'];
+  const requiredDocs = ['photograph', 'signature', '10thmarksheet','12thmarksheet', 'permanentResCert', 'domicileCert'];
   if (data.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
   if (data.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
 
@@ -2799,10 +2819,18 @@ function Step2Documents({
                 fileName={displayFileName} 
                 fileData={value as File | null}
                 error={requiredDocs.includes(key) && !!errors[key]}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) updateField('documents', key, file);
-                }}
+                accept={IMAGE_ONLY_DOC_FIELDS.includes(key) ? '.jpg,.jpeg,.png' : '.jpeg,.jpg,.png,.pdf'}
+  onChange={(e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const errMsg = validateFile(file, key);
+    e.target.value = '';
+    if (errMsg) {
+      showToast?.(errMsg, 'error');
+      return;
+    }
+    updateField('documents', key, file);
+  }}
                 onClear={() => handleRemoveDocument('documents', key)} 
               />
             );
@@ -2820,9 +2848,13 @@ function Step2Documents({
             fileData={data.teacherEligibility.tet1Cert}
             error={!!errors['tet1Cert']}
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) updateField('teacherEligibility', 'tet1Cert', file);
-            }}
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const errMsg = validateFile(file, 'tet1Cert'); // 'dedCert' for the other one
+  e.target.value = '';
+  if (errMsg) { showToast?.(errMsg, 'error'); return; }
+  updateField('teacherEligibility', 'tet1Cert', file);
+}}
             onClear={() => handleRemoveDocument('teacherEligibility', 'tet1Cert')} 
           />
 
@@ -2832,10 +2864,18 @@ function Step2Documents({
             fileName={data.teacherEligibility.dedCert?.name || (uploadedDocuments['dedCert'] ? 'Already Uploaded' : undefined)}
             fileData={data.teacherEligibility.dedCert}
             error={!!errors['dedCert']}
+            // onChange={(e) => {
+            //   const file = e.target.files?.[0];
+            //   if (file) updateField('teacherEligibility', 'dedCert', file);
+            // }}
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) updateField('teacherEligibility', 'dedCert', file);
-            }}
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const errMsg = validateFile(file, 'dedCert'); // 'dedCert' for the other one
+  e.target.value = '';
+  if (errMsg) { showToast?.(errMsg, 'error'); return; }
+  updateField('teacherEligibility', 'dedCert', file);
+}}
             onClear={() => handleRemoveDocument('teacherEligibility', 'dedCert')} 
           />
         </div>
@@ -2856,10 +2896,14 @@ function Step2Documents({
                     label="Upload Certificate"
                     fileName={exp.certificate?.name || (existingExpUrl ? 'Already Uploaded' : undefined)}
                     fileData={exp.certificate}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) updateExperience(index, 'certificate', file);
-                    }}
+                   onChange={(e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const errMsg = validateFile(file, 'experienceCert');
+  e.target.value = '';
+  if (errMsg) { showToast?.(errMsg, 'error'); return; }
+  updateExperience(index, 'certificate', file);
+}}
                     onClear={() => handleRemoveDocument('experience', 'certificate', index)} 
                   />
                 </div>
