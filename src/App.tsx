@@ -7,6 +7,10 @@ import { HomePage } from "./pages/HomePage";
 import AdminLoginPage from "./components/admin/adminlogin";
 import "./App.css";
 
+import AdminLayout from './layout/admin/Layout';
+import Dashboard from "./pages/Dashboard";
+import UserDetails from "./pages/UserDetails";
+
 function App() {
   return (
     <BrowserRouter>
@@ -22,6 +26,15 @@ function App() {
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="application" element={<ApplicationForm />} />
         </Route>
+
+        
+        <Route path="/admin" element={<AdminLayout />}>
+        
+          <Route index element={<Dashboard />} />
+        
+          <Route path="candidate/:id" element={<UserDetails />} />
+        </Route>
+
       </Routes>
     </BrowserRouter>
   );

@@ -1043,7 +1043,7 @@ export default function RegistrationForm() {
                             <option value="" disabled hidden>Please Select</option>
                             <option value="single">Married</option>
                             <option value="married">Unmarried</option>
-                            <option value="Divorced">Widows/Divorced women/women judicialy separated and who are not remarried</option>
+                           <option value="divorced">Widows/Divorced women/women judicialy separated and who are not remarried</option>
                           </select>
                           <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                         </div>
