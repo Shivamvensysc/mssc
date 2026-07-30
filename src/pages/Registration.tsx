@@ -1645,6 +1645,9 @@
 //     </div>
 //   );
 // }
+
+
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
@@ -1966,56 +1969,56 @@ export default function RegistrationForm() {
     return () => clearInterval(timer);
   }, [showMobileOtpModal, mobileOtpTimer]);
 
-  useEffect(() => {
-    const { dobDay, dobMonth, dobYear } = formData;
+  // useEffect(() => {
+  //   const { dobDay, dobMonth, dobYear } = formData;
     
-    if (dobDay && dobMonth && dobYear) {
-      const day = parseInt(dobDay, 10);
-      const year = parseInt(dobYear, 10);
+  //   if (dobDay && dobMonth && dobYear) {
+  //     const day = parseInt(dobDay, 10);
+  //     const year = parseInt(dobYear, 10);
       
-      const isNumericMonth = !isNaN(Number(dobMonth));
-      const monthIndex = isNumericMonth
-        ? parseInt(dobMonth, 10) - 1
-        : new Date(`${dobMonth} 1, 2000`).getMonth();
+  //     const isNumericMonth = !isNaN(Number(dobMonth));
+  //     const monthIndex = isNumericMonth
+  //       ? parseInt(dobMonth, 10) - 1
+  //       : new Date(`${dobMonth} 1, 2000`).getMonth();
 
-      const dobObj = new Date(year, monthIndex, day);
-      const isValidDate =
-        dobObj.getFullYear() === year &&
-        dobObj.getMonth() === monthIndex &&
-        dobObj.getDate() === day;
+  //     const dobObj = new Date(year, monthIndex, day);
+  //     const isValidDate =
+  //       dobObj.getFullYear() === year &&
+  //       dobObj.getMonth() === monthIndex &&
+  //       dobObj.getDate() === day;
 
-      if (!isValidDate) {
-        setErrors((prev) => ({ ...prev, dobDay: "Invalid date selected." }));
-        return;
-      }
+  //     if (!isValidDate) {
+  //       setErrors((prev) => ({ ...prev, dobDay: "Invalid date selected." }));
+  //       return;
+  //     }
 
-      const today = new Date();
-      if (dobObj > today) {
-        setErrors((prev) => ({ ...prev, dobDay: "Date of birth cannot be in the future." }));
-        return;
-      }
+  //     const today = new Date();
+  //     if (dobObj > today) {
+  //       setErrors((prev) => ({ ...prev, dobDay: "Date of birth cannot be in the future." }));
+  //       return;
+  //     }
 
-      let age = today.getFullYear() - dobObj.getFullYear();
-      const monthDiff = today.getMonth() - dobObj.getMonth();
+  //     let age = today.getFullYear() - dobObj.getFullYear();
+  //     const monthDiff = today.getMonth() - dobObj.getMonth();
       
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobObj.getDate())) {
-        age--;
-      }
+  //     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobObj.getDate())) {
+  //       age--;
+  //     }
 
-      if (age < 18) {
-        setErrors((prev) => ({ ...prev, dobDay: "Candidate must be at least 18 years old." }));
-      } else if (age > 38) {
-        setErrors((prev) => ({ ...prev, dobDay: "Age cannot exceed 38 years." }));
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          dobDay: undefined,
-          dobMonth: undefined,
-          dobYear: undefined
-        }));
-      }
-    }
-  }, [formData.dobDay, formData.dobMonth, formData.dobYear]);
+  //     if (age < 18) {
+  //       setErrors((prev) => ({ ...prev, dobDay: "Candidate must be at least 18 years old." }));
+  //     } else if (age > 38) {
+  //       setErrors((prev) => ({ ...prev, dobDay: "Age cannot exceed 38 years." }));
+  //     } else {
+  //       setErrors((prev) => ({
+  //         ...prev,
+  //         dobDay: undefined,
+  //         dobMonth: undefined,
+  //         dobYear: undefined
+  //       }));
+  //     }
+  //   }
+  // }, [formData.dobDay, formData.dobMonth, formData.dobYear]);
 
   const getMaxDaysInSelectedMonth = () => {
     const { dobMonth, dobYear } = formData;
@@ -2218,41 +2221,8 @@ export default function RegistrationForm() {
       return;
     }
 
-    if (formData.dobDay && formData.dobMonth && formData.dobYear) {
-      const day = parseInt(formData.dobDay, 10);
-      const year = parseInt(formData.dobYear, 10);
-      
-      const isNumericMonth = !isNaN(Number(formData.dobMonth));
-      const monthIndex = isNumericMonth
-        ? parseInt(formData.dobMonth, 10) - 1
-        : new Date(`${formData.dobMonth} 1, 2000`).getMonth();
-
-      const dateObj = new Date(year, monthIndex, day);
-      const isValidDate =
-        dateObj.getFullYear() === year &&
-        dateObj.getMonth() === monthIndex &&
-        dateObj.getDate() === day;
-
-      if (!isValidDate) {
-        setErrors((prev) => ({ ...prev, dobDay: "Invalid date selected." }));
-        toast.error('Please select a valid Date of Birth.');
-        return;
-      }
-
-      const today = new Date();
-      let age = today.getFullYear() - dateObj.getFullYear();
-      const monthDiff = today.getMonth() - dateObj.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateObj.getDate())) {
-        age--;
-      }
-
-      if (age > 38) {
-        setErrors((prev) => ({ ...prev, dobYear: "Age cannot exceed 38 years." }));
-        toast.error('You must be 38 years old or younger to apply.');
-        return;
-      }
-    }
+    
+    
 
     const result = registrationSchema.safeParse(formData);
 

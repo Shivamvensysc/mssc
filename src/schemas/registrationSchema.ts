@@ -462,8 +462,8 @@ const getGovEmployeeAgeRelaxation = (
 ): number => {
   if (govEmployee !== "Yes") return 0;
 
-  const category = (reservationCategory || "").trim().toUpperCase();
-  if (category.startsWith("OBC")) return 0; // OBC gets no experience-based relaxation
+  // const category = (reservationCategory || "").trim().toUpperCase();
+  // if (category.startsWith("OBC")) return 0; // OBC gets no experience-based relaxation
 
   const years = parseInt(experience ?? "", 10);
   return Number.isFinite(years) && years > 0 ? years : 0;
