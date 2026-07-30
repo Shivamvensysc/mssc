@@ -14,12 +14,12 @@
 // // DESIGN TOKENS
 // // ==========================================
 // const theme = {
-//   navy: '#1B5E3F',
-//   navyDark: '#0F3D28',
-//   navyLight: '#3D8A63',
+//   navy: '#0076b6',
+//   navyDark: '#0076b6',
+//   navyLight: '#0076b6',
 //   gold: '#B8873D',
 //   goldLight: '#F3E7D3',
-//   success: '#2F7A55',
+//   success: '#0076b6',
 //   error: '#C0392B',
 //   bg: '#F7F8FA',
 //   surface: '#FFFFFF',
@@ -473,7 +473,7 @@
 //   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 //   const [documentErrors, setDocumentErrors] = useState<Record<string, boolean>>({});
 //   const [showFinalDetailsPage, setShowFinalDetailsPage] = useState(false);
-//   const [rawApplicationData, setRawApplicationData] = useState(null);
+//   const [rawApplicationData, setRawApplicationData] = useState<any>(null);
 
 //   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
 //     setToast({ message, type });
@@ -857,7 +857,7 @@
 //         const hasPreviousFile = !!uploadedDocuments[docKey];
 //         return !hasNewFile && !hasPreviousFile; // It is missing only if BOTH are false
 //       });
-     
+      
       
 
 //     if (missingDocs.length > 0) {
@@ -1465,7 +1465,7 @@
 //         {label} {required && <span style={{ color: theme.gold }}>*</span>}
 //       </label>
 //       <div
-//         className="relative rounded-lg border-2 bg-white flex items-center gap-1.5 py-2 px-3 transition-all duration-150 disabled:bg-gray-100"
+//         className={`relative rounded-lg border-2 flex items-center gap-1.5 py-2 px-3 transition-all duration-150 ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
 //         style={{
 //           borderColor: focused ? theme.navy : theme.border,
 //           boxShadow: focused ? `0 0 0 3px ${theme.goldLight}` : 'none',
@@ -1803,7 +1803,7 @@
 //       <div
 //         className="relative flex flex-col items-center justify-center p-6 text-center rounded-xl transition-all"
 //         style={{
-        
+         
 //           border: `2px dashed ${showError ? theme.error : disabled ? '#d1d5db' : '#81C784'}`,
 //           backgroundColor: showError ? '#FDEEEC' : 'transparent',
 //           minHeight: '160px',
@@ -2208,7 +2208,7 @@
 //   // Check if fields should be disabled (when data is fetched from API)
 //   const isDisabled = (field: string) => {
 //     if (!isDataFetched) return false;
-//     const step0Fields = ['name', 'dob', 'gender', 'mobile', 'email', 'maritalStatus', 'nationality', 'district'];
+//     const step0Fields = ['name', 'dob', 'gender', 'mobile', 'email', 'maritalStatus', 'nationality', 'district', 'reservationCategory', 'pwdStatus'];
 //     return step0Fields.includes(field);
 //   };
 
@@ -2218,11 +2218,13 @@
 //         <h2 className="text-xl font-bold" style={{ color: theme.textPrimary }}>
 //           Application Details
 //         </h2>
-       
+        
 //       </div>
 
 //       <FormSection number={1} title="Personal Details">
 //         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+//           {/* TOP BLOCK: Disabled (Grey Block) Auto-filled fields */}
 //           <FormField 
 //             label="Candidate Name" 
 //             value={data.personalInfo.name} 
@@ -2237,14 +2239,6 @@
 //             onChange={(iso) => updateField('personalInfo', 'dob', iso)} 
 //             required 
 //             disabled={isDisabled('dob')}
-//           />
-          
-//           <FormSelect 
-//             label="Examination City" 
-//             value={data.personalInfo.examCity} 
-//             onChange={(e) => updateField('personalInfo', 'examCity', e.target.value)} 
-//             options={examCityOptions.map(c => ({ value: c, label: c }))}
-//             required 
 //           />
 //           <FormField 
 //             label="District" 
@@ -2281,20 +2275,6 @@
 //             error={errors?.personalInfo?.email}
 //           />
 //           <FormField 
-//             label="Father's Name" 
-//             value={data.personalInfo.fatherName} 
-//             onChange={(e) => updateField('personalInfo', 'fatherName', sanitizeTextOnly(e.target.value))} 
-//             required 
-//             error={errors?.personalInfo?.fatherName}
-//           />
-//           <FormField 
-//             label="Mother's Name" 
-//             value={data.personalInfo.motherName} 
-//             onChange={(e) => updateField('personalInfo', 'motherName', sanitizeTextOnly(e.target.value))} 
-//             required 
-//             error={errors?.personalInfo?.motherName}
-//           />
-//           <FormField 
 //             label="Nationality" 
 //             value={data.personalInfo.nationality} 
 //             onChange={(e) => updateField('personalInfo', 'nationality', sanitizeTextOnly(e.target.value))} 
@@ -2318,6 +2298,30 @@
 //             onChange={(e) => updateField('personalInfo', 'pwdStatus', e.target.value)} 
 //             options={yesNoOptions.map(y => ({ value: y, label: y }))}
 //             required 
+//             disabled={isDisabled('pwdStatus')}
+//           />
+          
+//           {/* BOTTOM BLOCK: Editable (White Block) fields */}
+//           <FormSelect 
+//             label="Examination City" 
+//             value={data.personalInfo.examCity} 
+//             onChange={(e) => updateField('personalInfo', 'examCity', e.target.value)} 
+//             options={examCityOptions.map(c => ({ value: c, label: c }))}
+//             required 
+//           />
+//           <FormField 
+//             label="Father's Name" 
+//             value={data.personalInfo.fatherName} 
+//             onChange={(e) => updateField('personalInfo', 'fatherName', sanitizeTextOnly(e.target.value))} 
+//             required 
+//             error={errors?.personalInfo?.fatherName}
+//           />
+//           <FormField 
+//             label="Mother's Name" 
+//             value={data.personalInfo.motherName} 
+//             onChange={(e) => updateField('personalInfo', 'motherName', sanitizeTextOnly(e.target.value))} 
+//             required 
+//             error={errors?.personalInfo?.motherName}
 //           />
 //           {data.personalInfo.pwdStatus === 'yes' && (
 //             <>
@@ -2548,7 +2552,7 @@
 //               Minimum 6 months required unless deferment acknowledgement is selected.
 //             </span>
 //           </div>
-         
+          
 //         </div>
 
 //         <label className="flex items-start gap-2.5 mt-5 cursor-pointer select-none">
@@ -3252,20 +3256,13 @@ const theme = {
 // ==========================================
 // VALIDATION: REGEX CONSTANTS
 // ==========================================
-// Only alphabets, spaces, dots, apostrophes and hyphens — numbers are NOT allowed.
 const TEXT_ONLY_REGEX = /^[A-Za-z][A-Za-z\s.'-]*$/;
-// Standard Indian 10-digit mobile number (must start with 6-9, exactly 10 digits).
 const MOBILE_REGEX = /^[6-9]\d{9}$/;
-// Production-grade email regex (WHATWG HTML living-standard pattern used by browsers for <input type="email">).
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
-// 6-digit Indian PIN code, cannot start with 0.
 const PINCODE_REGEX = /^[1-9][0-9]{5}$/;
-// 4-digit year, e.g. 1990-2029.
 const YEAR_REGEX = /^(19|20)\d{2}$/;
-// Digits only — used for numeric-only fields like training period (months) and service period.
 const NUMERIC_ONLY_REGEX = /^[0-9]+$/;
 
-// Reusable "letters only, no numbers" field builder for Zod.
 const textOnlyField = (label: string) =>
   z
     .string()
@@ -3337,8 +3334,6 @@ const personalInfoValidationSchema = z
   .object({
     name: textOnlyField('Candidate name'),
     dob: z.string().min(1, 'Date of birth is required'),
-    // Gender has no editable input in this step (it's captured upstream in an earlier step),
-    // so it is intentionally not enforced here to avoid blocking valid submissions.
     gender: z.string().optional().default(''),
     district: textOnlyField('District'),
     maritalStatus: z.string().min(1, 'Marital status is required'),
@@ -3374,24 +3369,6 @@ const personalInfoValidationSchema = z
     }
   });
 
-const experienceItemValidationSchema = z.object({
-  designation: z
-    .string()
-    .trim()
-    .min(1, 'Designation is required')
-    .regex(TEXT_ONLY_REGEX, 'Designation must contain only letters, numbers are not allowed'),
-  duration: z
-    .string()
-    .trim()
-    .min(1, 'Service period is required')
-    .regex(NUMERIC_ONLY_REGEX, 'Service period must contain only numbers, letters are not allowed'),
-  reasonLeaving: z
-    .string()
-    .optional()
-    .default('')
-    .refine((v) => !v || TEXT_ONLY_REGEX.test(v), 'Reason for leaving must contain only letters, numbers are not allowed'),
-});
-
 const teacherEligibilityValidationSchema = z
   .object({
     tenPlusTwoTrack: z.string().min(1, '10+2 qualification track is required'),
@@ -3420,7 +3397,14 @@ const teacherEligibilityValidationSchema = z
     }
   });
 
-// Full Step 1 schema — mirrors the FormState shape used in the wizard.
+// Base schema for experience item - fields are no longer strictly required at this level
+const experienceItemSchema = z.object({
+  designation: z.string().trim().default(''),
+  duration: z.string().trim().default(''),
+  reasonLeaving: z.string().optional().default(''),
+});
+
+// Full Step 1 schema
 const step1ValidationSchema = z.object({
   personalInfo: personalInfoValidationSchema,
   address: z.object({
@@ -3435,10 +3419,48 @@ const step1ValidationSchema = z.object({
     postGraduation: educationLevelValidationSchema('Post-Graduation', false),
   }),
   teacherEligibility: teacherEligibilityValidationSchema,
-  experience: z.array(experienceItemValidationSchema),
+  experience: z.array(experienceItemSchema),
+}).superRefine((val, ctx) => {
+  // Check if they are a state government employee
+  const isGovEmployee = val.personalInfo.stateGovEmployee === 'yes';
+
+  // Helper to identify if an experience row is completely blank
+  const isExpEmpty = (exp: any) => !exp.designation && !exp.duration && !exp.reasonLeaving;
+
+  const filledExperiences = val.experience.filter(exp => !isExpEmpty(exp));
+
+  // 1. Mandatory check if state government employee
+  if (isGovEmployee && filledExperiences.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Work experience is mandatory for State Government Employees',
+      path: ['experience', 0, 'designation'],
+    });
+  }
+
+  // 2. Validate filled rows (or rows they started filling)
+  val.experience.forEach((exp, index) => {
+    // If it's empty, we skip validation for this row (already caught above if mandatory)
+    if (isExpEmpty(exp)) return;
+
+    if (!exp.designation) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Designation is required', path: ['experience', index, 'designation'] });
+    } else if (!TEXT_ONLY_REGEX.test(exp.designation)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Designation must contain only letters, numbers are not allowed', path: ['experience', index, 'designation'] });
+    }
+
+    if (!exp.duration) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Service period is required', path: ['experience', index, 'duration'] });
+    } else if (!NUMERIC_ONLY_REGEX.test(exp.duration)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Service period must contain only numbers', path: ['experience', index, 'duration'] });
+    }
+
+    if (exp.reasonLeaving && !TEXT_ONLY_REGEX.test(exp.reasonLeaving)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Reason for leaving must contain only letters, numbers are not allowed', path: ['experience', index, 'reasonLeaving'] });
+    }
+  });
 });
 
-// Nested field-error shape mirroring FormState, used to surface messages inline under each input.
 type FieldErrors = {
   personalInfo?: Partial<Record<string, string>>;
   address?: {
@@ -3450,7 +3472,6 @@ type FieldErrors = {
   experience?: Array<Partial<Record<string, string>>>;
 };
 
-// Converts a ZodError's flat issue list into the nested FieldErrors shape above.
 const buildFieldErrorsFromZod = (error: z.ZodError): FieldErrors => {
   const result: any = {};
   for (const issue of error.issues) {
@@ -3728,13 +3749,12 @@ export default function MultiStepForm() {
           setCompletedSteps(data.completedSteps || []);
           setIsSubmitted(data.isSubmitted || false);
           
-
           if (data.status === 'submitted' && data.isSubmitted === true) {
-  setRawApplicationData(data);
-  setShowFinalDetailsPage(true);
-  setIsDataFetched(true);
-  return;
-}
+            setRawApplicationData(data);
+            setShowFinalDetailsPage(true);
+            setIsDataFetched(true);
+            return;
+          }
 
           // Check if we have step data
           const steps = data.steps || {};
@@ -3760,7 +3780,6 @@ export default function MultiStepForm() {
             
             if (step0.fullName) personalInfoUpdates.name = step0.fullName;
             if (step0.dateOfBirth) {
-              // Format as DD/MM/YYYY
               const parts = step0.dateOfBirth.split('-');
               if (parts.length === 3) {
                 personalInfoUpdates.dob = `${parts[0]}/${parts[1]}/${parts[2]}`;
@@ -3881,22 +3900,17 @@ export default function MultiStepForm() {
           
           // Determine current step based on completed steps and status
           if (data.isSubmitted) {
-            // If application is submitted, go to review
             setStep(4);
           } else if (data.status === 'payment_completed' || data.status === 'completed') {
-            // If payment is completed, go to step 4 (Review)
-            // Check if step2 documents are uploaded
             const step2Data = steps.step2 || {};
             const hasDocuments = Object.values(step2Data).some((val: any) => val !== null && val !== '');
             
             if (hasDocuments || data.completedSteps?.includes(2)) {
               setStep(4);
             } else {
-              // If no documents but payment completed, go to step 2
               setStep(2);
             }
           } else if (data.currentStep !== undefined && data.currentStep !== null) {
-            // Map backend step numbers to frontend steps
             const stepMapping: { [key: number]: number } = {
               0: 1,
               1: 1,
@@ -3936,11 +3950,14 @@ export default function MultiStepForm() {
         trainingNotAvailable: formData.teacherEligibility.trainingNotAvailable,
         tet1Passed: formData.teacherEligibility.tet1Passed,
       },
-      experience: formData.experience.map((exp) => ({
-        designation: exp.designation,
-        duration: exp.duration,
-        reasonLeaving: exp.reasonLeaving,
-      })),
+      // Filter out empty experience rows before sending to backend
+      experience: formData.experience
+        .filter(exp => exp.designation.trim() !== '' || exp.duration.trim() !== '' || exp.reasonLeaving.trim() !== '')
+        .map((exp) => ({
+          designation: exp.designation,
+          duration: exp.duration,
+          reasonLeaving: exp.reasonLeaving,
+        })),
     };
 
     const response = await api.patch(`${BASE_URL}/auth/candidate/step-1`, step1Payload, {
@@ -4021,8 +4038,6 @@ export default function MultiStepForm() {
         return;
       }
 
-      // Zod validation: text-only fields, 10-digit mobile, production-grade email,
-      // and mandatory percentage/marks — run before hitting the API.
       const validationResult = step1ValidationSchema.safeParse({
         personalInfo: formData.personalInfo,
         address: formData.address,
@@ -4063,24 +4078,16 @@ export default function MultiStepForm() {
         setIsProcessing(false);
       }
    } else if (step === 2) {
-           // ==========================================
-      // NEW: VALIDATION FOR REQUIRED DOCUMENTS (STARRED FIELDS)
-      // ==========================================
       const requiredDocs = ['photograph', 'signature', 'hslcMarksheet'];
-      // PWD Certificate becomes mandatory when PWD status is "yes"
       if (formData.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
-      // NOC becomes mandatory when the candidate is a State Government employee
       if (formData.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
 
-      // Check if document exists EITHER as a new File OR an already uploaded backend URL
       const missingDocs = requiredDocs.filter((docKey) => {
         const hasNewFile = !!formData.documents[docKey as keyof typeof formData.documents];
         const hasPreviousFile = !!uploadedDocuments[docKey];
-        return !hasNewFile && !hasPreviousFile; // It is missing only if BOTH are false
+        return !hasNewFile && !hasPreviousFile; 
       });
       
-      
-
     if (missingDocs.length > 0) {
         const missingLabels = missingDocs.map((key) => FIELD_LABELS[key] || key).join(', ');
         const errorMap: Record<string, boolean> = {};
@@ -4089,11 +4096,10 @@ export default function MultiStepForm() {
         });
         setDocumentErrors(errorMap);
         showToast(`Please upload required documents: ${missingLabels}`, 'error');
-        return; // Stops execution here, preventing submission
+        return;
       }
 
       setDocumentErrors({});
-      // ==========================================
 
       try {
         setIsProcessing(true);
@@ -4103,7 +4109,6 @@ export default function MultiStepForm() {
         }
         const response = await submitStep2(applicationId);
         if (response.success) {
-          // Fetch payment data before moving to step 3
           try {
             const paymentResponse = await initiatePayment(applicationId);
             if (paymentResponse.success) {
@@ -4111,12 +4116,11 @@ export default function MultiStepForm() {
               setStep(3);
             }
           } catch (paymentError: any) {
-            // Check for 409 Conflict (Payment already completed)
             if (paymentError.response?.status === 409) {
               setPaymentData({ status: 'paid' });
-              setStep(4); // Skip step 3 and go straight to Review
+              setStep(4);
             } else {
-              throw paymentError; // Let the outer catch handle standard errors
+              throw paymentError;
             }
           }
         }
@@ -4175,8 +4179,8 @@ export default function MultiStepForm() {
   }
 
   if (showFinalDetailsPage) {
-  return <ShowallDeatilsPage applicationData={rawApplicationData} />;
-}
+    return <ShowallDeatilsPage applicationData={rawApplicationData} />;
+  }
 
   return (
     <div
@@ -4469,7 +4473,6 @@ function StepIndicator({
 // ==========================================
 // SHARED FORM PRIMITIVES
 // ==========================================
-
 function FormField({
   label,
   value,
@@ -4540,7 +4543,6 @@ function FormField({
   );
 }
 
-// Updated FormSelect to support loading state
 function FormSelect({
   label,
   value,
@@ -4770,10 +4772,7 @@ function FormSection({
 }
 
 // ==========================================
-// NEW: Live Photo Capture Component
-// ==========================================
-// ==========================================
-// UPDATED: Live Photo Capture Component with Liveness Detection
+// Live Photo Capture Component
 // ==========================================
 function LivePhotoField({
   label,
@@ -4794,20 +4793,16 @@ function LivePhotoField({
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   
-  // Use state for the video ref so the hook updates when it mounts
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
 
-  // Initialize the Liveness Hook
   const { state, capturedFile, reset } = useFaceLiveness({
     videoEl: videoElement,
     enabled: isCameraOpen,
     onSecurityEvent: (msg) => {
-      // Optional: you can trigger a toast here if someone spoofs the camera
       console.warn("Security Event:", msg.en); 
     }
   });
 
-  // Handle preview generation when a file is captured or loaded
   useEffect(() => {
     if (fileData) {
       const reader = new FileReader();
@@ -4818,15 +4813,13 @@ function LivePhotoField({
     }
   }, [fileData]);
 
-  // Handle Auto-Capture from the hook
   useEffect(() => {
     if (capturedFile && !fileData) {
       onChange(capturedFile);
-      stopCamera(); // Stop camera automatically after successful capture
+      stopCamera(); 
     }
   }, [capturedFile, fileData, onChange]);
 
-  // Cleanup stream on unmount
   useEffect(() => {
     return () => {
       if (stream) {
@@ -4852,12 +4845,12 @@ function LivePhotoField({
       setStream(null);
     }
     setIsCameraOpen(false);
-    reset(); // Reset liveness hook state when camera closes
+    reset(); 
   };
 
   const handleRetake = () => {
     onClear();
-    reset(); // Reset hook state for a fresh attempt
+    reset(); 
     startCamera();
   };
 
@@ -4896,7 +4889,6 @@ function LivePhotoField({
         ) : isCameraOpen ? (
           <div className="flex flex-col items-center gap-3 w-full">
             
-            {/* Liveness Tracker UI */}
             <div 
               className="w-full text-center py-2 px-3 rounded-lg text-sm font-semibold transition-colors shadow-sm"
               style={{ 
@@ -4910,7 +4902,6 @@ function LivePhotoField({
               )}
             </div>
 
-            {/* Gesture Progress Indicators */}
             <div className="flex gap-4 text-xs font-bold w-full justify-center">
               <span style={{ color: state.progress.blink ? theme.success : theme.textMuted }}>
                 {state.progress.blink ? '✓' : '○'} Blink
@@ -4920,10 +4911,8 @@ function LivePhotoField({
               </span>
             </div>
 
-            {/* Video Element */}
             <video 
               ref={(node) => {
-                // Attach the video source stream here, and save to state
                 if (node && stream && node.srcObject !== stream) {
                   node.srcObject = stream;
                 }
@@ -4973,7 +4962,7 @@ function LivePhotoField({
 }
 
 // ==========================================
-// UPDATED: FileUploadField with Preview
+// FileUploadField with Preview
 // ==========================================
 function FileUploadField({
   label,
@@ -5024,7 +5013,6 @@ function FileUploadField({
       <div
         className="relative flex flex-col items-center justify-center p-6 text-center rounded-xl transition-all"
         style={{
-         
           border: `2px dashed ${showError ? theme.error : disabled ? '#d1d5db' : '#81C784'}`,
           backgroundColor: showError ? '#FDEEEC' : 'transparent',
           minHeight: '160px',
@@ -5108,7 +5096,6 @@ function FileUploadField({
         </span>
       )}
 
-      {/* Preview Modal */}
       {showPreview && preview && (
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center p-4"
@@ -5158,7 +5145,6 @@ function AddressFields({
   onStateChange?: (stateId: string) => void;
   errors?: Partial<Record<keyof Address, string>>;
 }) {
-  // Strips digits so village/city/district/police-station can never hold numbers.
   const sanitizeTextOnly = (value: string) => value.replace(/[0-9]/g, '');
 
   return (
@@ -5245,7 +5231,6 @@ function Step1Application({
   const [loadingStates, setLoadingStates] = useState({ states: false, districts: false, categories: false });
   const [statesMap, setStatesMap] = useState<Record<string, number>>({});
 
-  // Load states and categories on component mount
   useEffect(() => {
     const loadInitialData = async () => {
       setLoadingStates(prev => ({ ...prev, states: true, categories: true }));
@@ -5284,7 +5269,6 @@ function Step1Application({
     loadInitialData();
   }, []);
 
-  // Load districts when state changes
   const handleStateChange = async (stateName: string) => {
     const stateId = statesMap[stateName];
     if (!stateId) return;
@@ -5308,10 +5292,8 @@ function Step1Application({
     }
   };
 
-  // Strips digits so name/locality style fields can never hold numbers.
   const sanitizeTextOnly = (value: string) => value.replace(/[0-9]/g, '');
 
-  // Clears a single field's validation error as soon as the user edits it, for better UX.
   const clearFieldError = (category: string, field: string, subCategory?: string) => {
     if (!setErrors) return;
     setErrors((prev) => {
@@ -5368,7 +5350,6 @@ function Step1Application({
     }));
   };
 
-  // Copy permanent address to correspond when permanent address changes
   useEffect(() => {
     if (data.address.sameAsPermanent) {
       setData((prev) => ({
@@ -5426,12 +5407,13 @@ function Step1Application({
     'D.El.Ed. equivalent recognized RCI qualification',
   ];
 
-  // Check if fields should be disabled (when data is fetched from API)
   const isDisabled = (field: string) => {
     if (!isDataFetched) return false;
     const step0Fields = ['name', 'dob', 'gender', 'mobile', 'email', 'maritalStatus', 'nationality', 'district', 'reservationCategory', 'pwdStatus'];
     return step0Fields.includes(field);
   };
+
+  const isGovEmployee = data.personalInfo.stateGovEmployee === 'yes';
 
   return (
     <div className="space-y-6">
@@ -5650,7 +5632,6 @@ function Step1Application({
             </thead>
             <tbody>
               {(['10th', '12th', 'graduation', 'postGraduation'] as const).map((level, idx) => {
-                // Change this array if you want Post-Graduation to be mandatory as well
                 const isMandatory = ['10th', '12th', 'graduation'].includes(level);
 
                 return (
@@ -5759,7 +5740,6 @@ function Step1Application({
             label="RCI CRR Number" 
             value={data.teacherEligibility.rciNumber} 
             onChange={(e) => updateField('teacherEligibility', 'rciNumber', e.target.value)} 
-            // Note: Required property explicitly removed below as requested
           />
           <div className="flex flex-col gap-1.5">
             <FormField
@@ -5803,46 +5783,54 @@ function Step1Application({
         </div>
 
         <div className="space-y-4">
-          {data.experience.map((exp, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg relative bg-white"
-              style={{ border: `1px solid ${theme.border}` }}
-            >
-              <FormField 
-                label="Designation" 
-                value={exp.designation} 
-                onChange={(e) => updateExperience(index, 'designation', sanitizeTextOnly(e.target.value))} 
-                required 
-                error={errors?.experience?.[index]?.designation}
-              />
-              <FormField 
-                label="Service Period" 
-                value={exp.duration} 
-                onChange={(e) => updateExperience(index, 'duration', e.target.value.replace(/\D/g, ''))} 
-                placeholder="Numbers only, e.g., 24 (months)" 
-                required 
-                error={errors?.experience?.[index]?.duration}
-              />
-              <FormField 
-                label="Reason for Leaving" 
-                value={exp.reasonLeaving} 
-                onChange={(e) => updateExperience(index, 'reasonLeaving', sanitizeTextOnly(e.target.value))} 
-              />
+          {data.experience.map((exp, index) => {
+            // Check if row has been partially filled out
+            const isRowPartiallyFilled = exp.designation.trim() !== '' || exp.duration.trim() !== '' || exp.reasonLeaving.trim() !== '';
+            // If they are a state government employee OR they started filling out this specific row, make it mandatory
+            const isRequired = isGovEmployee || isRowPartiallyFilled;
 
-              {data.experience.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeExperience(index)}
-                  className="absolute -right-2.5 -top-2.5 p-1.5 rounded-full transition-colors"
-                  style={{ backgroundColor: '#FDEEEC', color: theme.error }}
-                  aria-label="Remove experience"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </div>
-          ))}
+            return (
+              <div
+                key={index}
+                className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg relative bg-white"
+                style={{ border: `1px solid ${theme.border}` }}
+              >
+                <FormField 
+                  label="Designation" 
+                  value={exp.designation} 
+                  onChange={(e) => updateExperience(index, 'designation', sanitizeTextOnly(e.target.value))} 
+                  required={isRequired} 
+                  error={errors?.experience?.[index]?.designation}
+                />
+                <FormField 
+                  label="Service Period" 
+                  value={exp.duration} 
+                  onChange={(e) => updateExperience(index, 'duration', e.target.value.replace(/\D/g, ''))} 
+                  placeholder="Numbers only, e.g., 24 (months)" 
+                  required={isRequired} 
+                  error={errors?.experience?.[index]?.duration}
+                />
+                <FormField 
+                  label="Reason for Leaving" 
+                  value={exp.reasonLeaving} 
+                  onChange={(e) => updateExperience(index, 'reasonLeaving', sanitizeTextOnly(e.target.value))} 
+                  error={errors?.experience?.[index]?.reasonLeaving}
+                />
+
+                {data.experience.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeExperience(index)}
+                    className="absolute -right-2.5 -top-2.5 p-1.5 rounded-full transition-colors"
+                    style={{ backgroundColor: '#FDEEEC', color: theme.error }}
+                    aria-label="Remove experience"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </FormSection>
     </div>
@@ -5865,7 +5853,6 @@ function Step2Documents({
   setErrors?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   uploadedDocuments?: Record<string, string>;
 }) {
-  // Clears a single document's mandatory-field error as soon as the user uploads/removes a file.
   const clearDocError = (key: string) => {
     if (!setErrors) return;
     setErrors((prev) => {
@@ -5892,29 +5879,24 @@ function Step2Documents({
     });
   };
 
-  // Base mandatory documents, plus conditional ones depending on candidate's declared status.
   const requiredDocs = ['photograph', 'signature', 'hslcMarksheet'];
   if (data.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
   if (data.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
 
-  // Get document entries based on conditions
   const getDocumentEntries = () => {
     const entries = Object.entries(data.documents);
     const filtered: [string, File | null][] = [];
 
     for (const [key, value] of entries) {
-      // Skip reservation certificate if General or Other
       if (key === 'reservationCert') {
         const category = data.personalInfo.reservationCategory;
         if (category === 'General' || category === 'Other') continue;
       }
       
-      // Skip NOC if not state government employee
       if (key === 'nocCert') {
         if (data.personalInfo.stateGovEmployee !== 'yes') continue;
       }
       
-      // Skip PWD certificate if PWD status is no
       if (key === 'pwdCert') {
         if (data.personalInfo.pwdStatus !== 'yes') continue;
       }
@@ -5942,11 +5924,9 @@ function Step2Documents({
       <FormSection number={1} title="Identity & Certificate Documents">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {getDocumentEntries().map(([key, value]) => {
-            // NEW: Check if a file was previously uploaded to the backend
             const existingUrl = uploadedDocuments[key];
             let displayFileName = value?.name;
             
-            // If no new file is selected but an old one exists, use its name
             if (!displayFileName && existingUrl) {
               displayFileName = existingUrl.split('/').pop()?.split('?')[0] || 'Already Uploaded';
             }
@@ -5968,7 +5948,7 @@ function Step2Documents({
                 key={key}
                 label={labelFor(key)}
                 required={requiredDocs.includes(key)}
-              fileName={displayFileName} 
+                fileName={displayFileName} 
                 fileData={value as File | null}
                 error={requiredDocs.includes(key) && !!errors[key]}
                 onChange={(e) => {
@@ -6080,11 +6060,9 @@ function Step3Payment({
       const response = await initiatePayment(applicationId, selectedMode);
 
       if (response.success) {
-        // Redirect to payment gateway
         if (response.data?.paymentUrl) {
           window.location.href = response.data.paymentUrl;
         } else {
-          // If no redirect URL, assume payment is complete
           showToast('Payment initiated successfully!', 'success');
           onPaymentSuccess();
         }
@@ -6093,7 +6071,6 @@ function Step3Payment({
       }
     } catch (error: any) {
       if (error.response?.status === 409) {
-          // If payment is already completed, show success and move to step 4
           showToast('Payment has already been completed for this application.', 'success');
           onPaymentSuccess(); 
         } else {
@@ -6112,7 +6089,6 @@ function Step3Payment({
     <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 space-y-6 font-sans">
       <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 shadow-xs space-y-6">
         
-        {/* Section 1: Applicable Fee Header & Banner */}
         <div className="space-y-3">
           <h2 className="text-sm sm:text-base font-bold text-slate-900">
             Your applicable fee <span className="font-normal text-slate-700">· आपका लागू शुल्क</span>
@@ -6133,7 +6109,6 @@ function Step3Payment({
           </div>
         </div>
 
-        {/* Section 2: Payment Mode Selection */}
         {!isFeePaid && (
           <div className="space-y-3">
             <h3 className="text-sm sm:text-base font-bold text-slate-900">
@@ -6171,7 +6146,6 @@ function Step3Payment({
           </div>
         )}
 
-        {/* Section 3: Redirection Notice Box */}
         <div className={`border rounded-xl p-4 text-xs sm:text-sm leading-relaxed ${isFeePaid ? 'bg-[#ebf6f0] border-[#d1ebd9] text-[#166534]' : 'bg-[#fff8f0] border-[#fde2cb] text-[#9a3412]'}`}>
           {isFeePaid ? (
             'Payment has already been completed for this application. You can proceed to the next step.'
@@ -6180,7 +6154,6 @@ function Step3Payment({
           )}
         </div>
 
-        {/* Section 4: Acknowledgment Checkbox */}
         {!isFeePaid && (
           <div className="flex items-start space-x-3 pt-1">
             <input
@@ -6200,7 +6173,6 @@ function Step3Payment({
         )}
       </div>
 
-      {/* Bottom Button Action */}
       <div className="flex justify-end">
         {isFeePaid ? (
           <button
@@ -6265,20 +6237,15 @@ function Step4Review({
     </div>
   );
 
-  // Check if a document is uploaded (either as File or URL)
   const isDocumentUploaded = (key: string, fileValue: File | null) => {
-    // Check if there's a File object
     if (fileValue) return true;
-    // Check if there's a URL in uploadedDocuments
     if (uploadedDocuments[key]) return true;
     return false;
   };
 
-  // Get document display name
   const getDocumentDisplayName = (key: string, fileValue: File | null) => {
     if (fileValue) return fileValue.name;
     if (uploadedDocuments[key]) {
-      // Extract filename from URL
       const url = uploadedDocuments[key];
       const filename = url.split('/').pop()?.split('?')[0] || 'Uploaded';
       return filename;
@@ -6325,7 +6292,6 @@ function Step4Review({
       <FormSection number={4} title="Teacher Eligibility">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {Object.entries(data.teacherEligibility).map(([key, val]) => {
-            // Skip File objects in this view
             if (val instanceof File) return null;
             return (
               <div key={key} className="flex flex-col">
@@ -6344,7 +6310,6 @@ function Step4Review({
       <FormSection number={5} title="Documents">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {Object.entries(data.documents).map(([key, val]) => {
-            // Skip hidden documents in review
             if (key === 'reservationCert' && (data.personalInfo.reservationCategory === 'General' || data.personalInfo.reservationCategory === 'Other')) return null;
             if (key === 'nocCert' && data.personalInfo.stateGovEmployee !== 'yes') return null;
             if (key === 'pwdCert' && data.personalInfo.pwdStatus !== 'yes') return null;
@@ -6381,13 +6346,15 @@ function Step4Review({
       </FormSection>
 
       <FormSection number={6} title="Work Experience">
-        {data.experience.length === 0 ? (
+        {data.experience.filter(exp => exp.designation.trim() !== '' || exp.duration.trim() !== '' || exp.reasonLeaving.trim() !== '').length === 0 ? (
           <p className="text-sm" style={{ color: theme.textMuted }}>
             No experience added.
           </p>
         ) : (
           <div className="space-y-3">
-            {data.experience.map((exp, idx) => {
+            {data.experience
+              .filter(exp => exp.designation.trim() !== '' || exp.duration.trim() !== '' || exp.reasonLeaving.trim() !== '')
+              .map((exp, idx) => {
               const isExpCertUploaded = exp.certificate || uploadedDocuments[`experienceCert_${idx}`];
               const expCertName = exp.certificate?.name || (uploadedDocuments[`experienceCert_${idx}`] ? 'Uploaded' : null);
               

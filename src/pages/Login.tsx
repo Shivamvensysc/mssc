@@ -1610,7 +1610,7 @@ export function LoginPage() {
                   <input 
                     id="email" 
                     type="text" 
-                    placeholder="Username or Email" 
+                    placeholder="Enter Your Username or Email" 
                     value={email}
                     onChange={handleEmailChange}
                     required
@@ -1627,7 +1627,7 @@ export function LoginPage() {
                       <input 
                         id="password" 
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Password" 
+                        placeholder="Enter Your Password" 
                         value={password}
                         onChange={handlePasswordChange}
                         required
@@ -1674,7 +1674,7 @@ export function LoginPage() {
               <div className="mt-4 text-center">
                 <p className="font-body-md text-sm text-slate-600">
                   Don't have an account? 
-                  <Link to="/" className="text-[#0076b6] font-bold hover:underline ml-1">Register</Link>
+                  <Link to="/register" className="text-[#0076b6] font-bold hover:underline ml-1">Register</Link>
                 </p>
               </div>
             </div>
