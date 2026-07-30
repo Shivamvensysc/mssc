@@ -2028,7 +2028,7 @@ function educationTable(
   y: number,
   education: SlipData["education"],
 ): number {
-  const headers = ["LEVEL", "INSTITUTION", "BOARD/UNIVERSITY", "YEAR", "PERCENTAGE"];
+  const headers = ["LEVEL", "INSTITUTION", "BOARD/UNIVERSITY", "YEAR", "PERCENTAGE/CGPA"];
   const widths = [26, 62, 52, 20, 30]; 
 
   y = ensureSpace(pdf, y, 9);

@@ -901,7 +901,7 @@ const friendlyCognitoMessage = (err: unknown, fallback: string): string => {
     case "UserNotFoundException":
       return "We couldn't find an account for that email address.";
     case "NotAuthorizedException":
-      return "This action isn't allowed right now. Please try registering again.";
+      return "Incorrect username or password.";
     case "InvalidParameterException":
       return "Something about that request wasn't valid. Please check the details and try again.";
     default:

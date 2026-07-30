@@ -209,60 +209,7 @@ export const HomePage: React.FC = () => {
         </section>
 
         {/* SUPPORT SECTION */}
-        <section id="support" className="py-16 bg-white border-t border-slate-200">
-          <div className="container mx-auto px-6 max-w-5xl">
-            {/* Updated container to use the darker blue #00476D */}
-            <div className="bg-[#00476D] rounded-2xl text-white p-8 md:p-12 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-              <div>
-                <h2 className="text-xl font-bold mb-3">Portal Grievance & Technical Helpdesk</h2>
-                <p className="text-blue-100 text-xs mb-6 leading-relaxed">
-                  If you encounter payment status failures, registration bugs, or document submission errors, reach out to the Commission's technical partner or desk team immediately.
-                </p>
-                <div className="space-y-4 text-xs text-blue-50">
-                  <div className="flex items-center gap-3">
-                    <i className="fas fa-envelope text-blue-300 text-sm"></i>
-                    <span>Official Communications: <strong>mssc-mn@manipur.gov.in</strong></span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <i className="fas fa-building text-blue-300 text-sm"></i>
-                    <span>DC Office Complex Imphal West, Lamphelpat, 795004</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Query Form */}
-              <div className="bg-white p-5 rounded-xl text-slate-800 text-xs shadow-lg">
-                <h3 className="font-bold text-slate-900 mb-3 text-sm">Log an Application Discrepancy</h3>
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Candidate Reg No / Email</label>
-                    <input 
-                      type="text" 
-                      value={regNo}
-                      onChange={(e) => setRegNo(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded focus:ring-1 focus:ring-[#0076b6] focus:outline-none" 
-                      placeholder="Provide tracking values"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Issue Description</label>
-                    <textarea 
-                      rows={2} 
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded focus:ring-1 focus:ring-[#0076b6] focus:outline-none" 
-                      placeholder="Elaborate details..."
-                    />
-                  </div>
-                  {/* Updated button to theme blue */}
-                  <button type="submit" className="w-full bg-[#0076b6] hover:bg-[#005a8b] text-white font-bold py-2 rounded transition shadow-sm">
-                    Submit Support Ticket
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </section>
+       
       </main>
     </div>
   );
