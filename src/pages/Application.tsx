@@ -322,8 +322,8 @@ interface FormState {
     eligibilityCert: File | null;
     permanentResCert: File | null;
     domicileCert: File | null;
-    hslcMarksheet: File | null;
-    hsslcMarksheet: File | null;
+   '10thmarksheet': File | null;  // 👈 ADD THIS
+    '12thmarksheet': File | null;
     graduationMarksheet: File | null;
     nocCert: File | null;
     reservationCert: File | null;
@@ -399,8 +399,8 @@ const initialState: FormState = {
     eligibilityCert: null,
     permanentResCert: null,
     domicileCert: null,
-    hslcMarksheet: null,
-    hsslcMarksheet: null,
+    '10thmarksheet': null,  // 👈 ADD THIS
+    '12thmarksheet': null,
     graduationMarksheet: null,
     nocCert: null,
     reservationCert: null,
@@ -447,8 +447,8 @@ const FIELD_LABELS: Record<string, string> = {
   eligibilityCert: 'Eligibility Certificate',
   permanentResCert: 'Permanent Residence Certificate',
   domicileCert: 'Domicile Certificate',
-  hslcMarksheet: '10th Marksheet',
-  hsslcMarksheet: '12th Marksheet',
+  '10thmarksheet': '10th Marksheet', // 👈 ADD THIS
+  '12thmarksheet': '12th Marksheet',
   graduationMarksheet: 'Graduation Marksheet',
   nocCert: 'No Objection Certificate',
   reservationCert: 'Reservation Certificate',
@@ -867,7 +867,7 @@ export default function MultiStepForm() {
         setIsProcessing(false);
       }
    } else if (step === 2) {
-      const requiredDocs = ['photograph', 'signature', 'hslcMarksheet', 'hsslcMarksheet', 'graduationMarksheet'];
+      const requiredDocs = ['photograph', 'signature','10thmarksheet', '12thmarksheet'];
       if (formData.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
       if (formData.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
 
@@ -1015,6 +1015,7 @@ export default function MultiStepForm() {
               errors={documentErrors}
               setErrors={setDocumentErrors}
               uploadedDocuments={uploadedDocuments}
+              setUploadedDocuments={setUploadedDocuments}
             />
           )}
           {step === 3 && <Step3Payment 
@@ -2635,12 +2636,14 @@ function Step2Documents({
   errors = {},
   setErrors,
   uploadedDocuments = {},
+  setUploadedDocuments, // 👈 Added this prop
 }: {
   data: FormState;
   setData: React.Dispatch<React.SetStateAction<FormState>>;
   errors?: Record<string, boolean>;
   setErrors?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   uploadedDocuments?: Record<string, string>;
+  setUploadedDocuments?: React.Dispatch<React.SetStateAction<Record<string, string>>>; // 👈 Added type
 }) {
   const clearDocError = (key: string) => {
     if (!setErrors) return;
@@ -2668,7 +2671,30 @@ function Step2Documents({
     });
   };
 
-  const requiredDocs = ['photograph', 'signature', 'hslcMarksheet', 'hsslcMarksheet', 'graduationMarksheet'];
+  // 👇 NEW HELPER: Removes the file from BOTH local state and uploaded API state
+  const handleRemoveDocument = (category: keyof FormState, key: string, experienceIndex?: number) => {
+    if (category === 'experience' && experienceIndex !== undefined) {
+      updateExperience(experienceIndex, 'certificate', null);
+      if (setUploadedDocuments) {
+        setUploadedDocuments((prev) => {
+          const next = { ...prev };
+          delete next[`experienceCert_${experienceIndex}`];
+          return next;
+        });
+      }
+    } else {
+      updateField(category, key, null);
+      if (setUploadedDocuments) {
+        setUploadedDocuments((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+      }
+    }
+  };
+
+  const requiredDocs = ['photograph', 'signature', '10thmarksheet', '12thmarksheet'];
   if (data.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
   if (data.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
 
@@ -2704,9 +2730,6 @@ function Step2Documents({
         </h2>
       </div>
 
-    
-    
-
       <FormSection number={1} title="Identity & Certificate Documents">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {getDocumentEntries().map(([key, value]) => {
@@ -2725,7 +2748,7 @@ function Step2Documents({
                   required={requiredDocs.includes(key)}
                   fileData={value as File | null}
                   onChange={(file) => updateField('documents', key, file)}
-                  onClear={() => updateField('documents', key, null)}
+                  onClear={() => handleRemoveDocument('documents', key)} // 👈 Updated
                 />
               );
             }
@@ -2741,7 +2764,7 @@ function Step2Documents({
                   const file = e.target.files?.[0];
                   if (file) updateField('documents', key, file);
                 }}
-                onClear={() => updateField('documents', key, null)}
+                onClear={() => handleRemoveDocument('documents', key)} // 👈 Updated
               />
             );
           })}
@@ -2753,50 +2776,53 @@ function Step2Documents({
           
           <FileUploadField
             label="TET-1 Certificate"
-            fileName={data.teacherEligibility.tet1Cert?.name}
+            fileName={data.teacherEligibility.tet1Cert?.name || (uploadedDocuments['tet1Cert'] ? 'Already Uploaded' : undefined)}
             fileData={data.teacherEligibility.tet1Cert}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) updateField('teacherEligibility', 'tet1Cert', file);
             }}
-            onClear={() => updateField('teacherEligibility', 'tet1Cert', null)}
+            onClear={() => handleRemoveDocument('teacherEligibility', 'tet1Cert')} // 👈 Updated
           />
 
           <FileUploadField
             label="D.El.Ed / D.Ed Certificate"
-            fileName={data.teacherEligibility.dedCert?.name}
+            fileName={data.teacherEligibility.dedCert?.name || (uploadedDocuments['dedCert'] ? 'Already Uploaded' : undefined)}
             fileData={data.teacherEligibility.dedCert}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) updateField('teacherEligibility', 'dedCert', file);
             }}
-            onClear={() => updateField('teacherEligibility', 'dedCert', null)}
+            onClear={() => handleRemoveDocument('teacherEligibility', 'dedCert')} // 👈 Updated
           />
         </div>
       </FormSection>
 
       <FormSection number={3} title="Experience Certificates">
         <div className="space-y-4">
-          {data.experience.map((exp, index) => (
-            <div key={index} className="p-4 rounded-lg bg-white" style={{ border: `1px solid ${theme.border}` }}>
-              <p className="text-sm font-semibold mb-4" style={{ color: theme.textPrimary }}>
-                Experience #{index + 1}
-                {exp.designation ? ` — ${exp.designation}` : ''}
-              </p>
-              <div className="max-w-md">
-                <FileUploadField
-                  label="Upload Certificate"
-                  fileName={exp.certificate?.name}
-                  fileData={exp.certificate}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) updateExperience(index, 'certificate', file);
-                  }}
-                  onClear={() => updateExperience(index, 'certificate', null)}
-                />
+          {data.experience.map((exp, index) => {
+            const existingExpUrl = uploadedDocuments[`experienceCert_${index}`];
+            return (
+              <div key={index} className="p-4 rounded-lg bg-white" style={{ border: `1px solid ${theme.border}` }}>
+                <p className="text-sm font-semibold mb-4" style={{ color: theme.textPrimary }}>
+                  Experience #{index + 1}
+                  {exp.designation ? ` — ${exp.designation}` : ''}
+                </p>
+                <div className="max-w-md">
+                  <FileUploadField
+                    label="Upload Certificate"
+                    fileName={exp.certificate?.name || (existingExpUrl ? 'Already Uploaded' : undefined)}
+                    fileData={exp.certificate}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) updateExperience(index, 'certificate', file);
+                    }}
+                    onClear={() => handleRemoveDocument('experience', 'certificate', index)} // 👈 Updated
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </FormSection>
     </div>
