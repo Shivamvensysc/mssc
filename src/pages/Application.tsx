@@ -1,3 +1,4 @@
+
 // import React, { useState, useId, useEffect } from 'react';
 // import axios from 'axios';
 // import { z } from 'zod';
@@ -294,6 +295,7 @@
 //     nocCert: File | null;
 //     reservationCert: File | null;
 //     pwdCert: File | null;
+//     experienceCert: File | null; // <-- ADDED
 //   };
 //   education: {
 //     '10th': EducationLevel;
@@ -370,6 +372,7 @@
 //     nocCert: null,
 //     reservationCert: null,
 //     pwdCert: null,
+//     experienceCert: null, // <-- ADDED
 //   },
 //   education: {
 //     '10th': { ...emptyEducation },
@@ -412,6 +415,7 @@
 //   nocCert: 'No Objection Certificate',
 //   reservationCert: 'Reservation Certificate',
 //   pwdCert: 'PWD Certificate',
+//   experienceCert: 'Experience Certificate', // <-- ADDED
 //   dedQual: 'D.Ed. / D.El.Ed. Qualification',
 //   dedInstitution: 'D.Ed. / D.El.Ed. Institute',
 //   rciNumber: 'RCI CRR Number',
@@ -828,9 +832,10 @@
 //       }
 //    } else if (step === 2) {
 //       const requiredDocs = ['photograph', 'signature','10thmarksheet', '12thmarksheet', 'permanentResCert', 'domicileCert'];
-//       if (formData.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
-//       if (formData.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
-
+//      if (formData.personalInfo.stateGovEmployee === 'yes') {
+//   requiredDocs.push('nocCert');
+//   requiredDocs.push('experienceCert'); // <-- This makes it block the user from proceeding
+// }
 //       const missingDocs = requiredDocs.filter((docKey) => {
 //         const hasNewFile = !!formData.documents[docKey as keyof typeof formData.documents];
 //         const hasPreviousFile = !!uploadedDocuments[docKey];
@@ -2587,10 +2592,15 @@
 //     }
 //   };
 
-//   const requiredDocs = ['photograph', 'signature', '10thmarksheet','12thmarksheet', 'permanentResCert', 'domicileCert'];
-//   if (data.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
-//   if (data.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
+// // Inside handleNext() -> else if (step === 2)
+// const requiredDocs = ['photograph', 'signature', '10thmarksheet', '12thmarksheet', 'permanentResCert', 'domicileCert'];
+// if (data.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
 
+// // UPDATE THIS BLOCK:
+// if (data.personalInfo.stateGovEmployee === 'yes') {
+//   requiredDocs.push('nocCert');
+//   requiredDocs.push('experienceCert'); // <-- Add this
+// }
 //   const getDocumentEntries = () => {
 //     const entries = Object.entries(data.documents);
 //     const filtered: [string, File | null][] = [];
@@ -2608,6 +2618,9 @@
 //       if (key === 'pwdCert') {
 //         if (data.personalInfo.pwdStatus !== 'yes') continue;
 //       }
+      
+//       // Prevent Experience Certificate from rendering in the generic document section
+//       if (key === 'experienceCert') continue;
       
 //       filtered.push([key, value]);
 //     }
@@ -2698,10 +2711,6 @@
 //             fileName={data.teacherEligibility.dedCert?.name || (uploadedDocuments['dedCert'] ? 'Already Uploaded' : undefined)}
 //             fileData={data.teacherEligibility.dedCert}
 //             error={!!errors['dedCert']}
-//             // onChange={(e) => {
-//             //    const file = e.target.files?.[0];
-//             //    if (file) updateField('teacherEligibility', 'dedCert', file);
-//             // }}
 //             onChange={(e) => {
 //   const file = e.target.files?.[0];
 //   if (!file) return;
@@ -2715,8 +2724,36 @@
 //         </div>
 //       </FormSection>
 
-      
-      
+//  <FormSection number={3} title="Experience Certificate">
+//   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//     <FileUploadField
+//       label={
+//         data.personalInfo.stateGovEmployee === 'yes'
+//           ? 'Experience Certificate'
+//           : 'Experience Certificate (Optional)'
+//       }
+//       required={data.personalInfo.stateGovEmployee === 'yes'} // Dynamic requirement
+//       fileName={
+//         data.documents.experienceCert?.name ||
+//         (uploadedDocuments['experienceCert'] ? 'Already Uploaded' : undefined)
+//       }
+//       fileData={data.documents.experienceCert}
+//       error={!!errors['experienceCert']} // Shows red outline if missing
+//       onChange={(e) => {
+//         const file = e.target.files?.[0];
+//         if (!file) return;
+//         const errMsg = validateFile(file, 'experienceCert');
+//         e.target.value = '';
+//         if (errMsg) {
+//           showToast?.(errMsg, 'error');
+//           return;
+//         }
+//         updateField('documents', 'experienceCert', file);
+//       }}
+//       onClear={() => handleRemoveDocument('documents', 'experienceCert')}
+//     />
+//   </div>
+// </FormSection>
 //     </div>
 //   );
 // }
@@ -5679,21 +5716,17 @@ if (data.personalInfo.stateGovEmployee === 'yes') {
     const filtered: [string, File | null][] = [];
 
     for (const [key, value] of entries) {
-    if (key === 'reservationCert') {
+      if (key === 'reservationCert') {
         const category = data.personalInfo.reservationCategory;
         if (category === 'General' || category === 'Other' || category === 'UR') continue;
-      }
-      
-      if (key === 'nocCert') {
-        if (data.personalInfo.stateGovEmployee !== 'yes') continue;
       }
       
       if (key === 'pwdCert') {
         if (data.personalInfo.pwdStatus !== 'yes') continue;
       }
       
-      // Prevent Experience Certificate from rendering in the generic document section
-      if (key === 'experienceCert') continue;
+      // Prevent Experience AND NOC Certificates from rendering in the generic top section
+      if (key === 'experienceCert' || key === 'nocCert') continue;
       
       filtered.push([key, value]);
     }
@@ -5797,36 +5830,59 @@ if (data.personalInfo.stateGovEmployee === 'yes') {
         </div>
       </FormSection>
 
- <FormSection number={3} title="Experience Certificate">
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <FileUploadField
-      label={
-        data.personalInfo.stateGovEmployee === 'yes'
-          ? 'Experience Certificate'
-          : 'Experience Certificate (Optional)'
-      }
-      required={data.personalInfo.stateGovEmployee === 'yes'} // Dynamic requirement
-      fileName={
-        data.documents.experienceCert?.name ||
-        (uploadedDocuments['experienceCert'] ? 'Already Uploaded' : undefined)
-      }
-      fileData={data.documents.experienceCert}
-      error={!!errors['experienceCert']} // Shows red outline if missing
-      onChange={(e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const errMsg = validateFile(file, 'experienceCert');
-        e.target.value = '';
-        if (errMsg) {
-          showToast?.(errMsg, 'error');
-          return;
-        }
-        updateField('documents', 'experienceCert', file);
-      }}
-      onClear={() => handleRemoveDocument('documents', 'experienceCert')}
-    />
-  </div>
-</FormSection>
+ <FormSection number={3} title="Experience & No Objection Certificate">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FileUploadField
+            label={
+              data.personalInfo.stateGovEmployee === 'yes'
+                ? 'Experience Certificate'
+                : 'Experience Certificate (Optional)'
+            }
+            required={data.personalInfo.stateGovEmployee === 'yes'} // Dynamic requirement
+            fileName={
+              data.documents.experienceCert?.name ||
+              (uploadedDocuments['experienceCert'] ? 'Already Uploaded' : undefined)
+            }
+            fileData={data.documents.experienceCert}
+            error={!!errors['experienceCert']} // Shows red outline if missing
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const errMsg = validateFile(file, 'experienceCert');
+              e.target.value = '';
+              if (errMsg) {
+                showToast?.(errMsg, 'error');
+                return;
+              }
+              updateField('documents', 'experienceCert', file);
+            }}
+            onClear={() => handleRemoveDocument('documents', 'experienceCert')}
+          />
+
+          {/* ADDED: NOC Certificate rendered here dynamically */}
+          {data.personalInfo.stateGovEmployee === 'yes' && (
+            <FileUploadField
+              label="No Objection Certificate (NOC)"
+              required={true}
+              fileName={
+                data.documents.nocCert?.name || 
+                (uploadedDocuments['nocCert'] ? 'Already Uploaded' : undefined)
+              }
+              fileData={data.documents.nocCert}
+              error={!!errors['nocCert']}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const errMsg = validateFile(file, 'nocCert');
+                e.target.value = '';
+                if (errMsg) { showToast?.(errMsg, 'error'); return; }
+                updateField('documents', 'nocCert', file);
+              }}
+              onClear={() => handleRemoveDocument('documents', 'nocCert')} 
+            />
+          )}
+        </div>
+      </FormSection>
     </div>
   );
 }
