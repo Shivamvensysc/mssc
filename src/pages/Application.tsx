@@ -1893,9 +1893,6 @@ function FileUploadField({
                 {disabled ? 'No file uploaded' : 'Choose a file or drag & drop it here'}
               </p>
               
-              
-              
-              
               {!disabled && (
                 <div 
                   className="flex items-center gap-2 px-5 py-1.5 bg-white rounded-lg border text-sm font-semibold shadow-sm"
