@@ -569,7 +569,7 @@ export const registrationSchema = z
       message: "You must confirm residency eligibility",
     }),
 
-    gender: z.enum(["male", "female"], {
+    gender: z.enum(["male", "female","transgender"], {
       message: "Please select a gender",
     }),
 
