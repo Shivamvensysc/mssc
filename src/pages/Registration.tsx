@@ -491,10 +491,22 @@ export default function RegistrationForm() {
     }
   }, [formData.dobMonth, formData.dobYear]);
 
+  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({ ...prev, [name]: value }));
+  //   setErrors((prev) => ({ ...prev, [name]: undefined }));
+  // };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: undefined }));
+    
+    // Add real-time validation for dialect
+    if (name === 'dialect' && value === 'No') {
+      setErrors((prev) => ({ ...prev, [name]: "You are not eligible for this post." }));
+    } else {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {

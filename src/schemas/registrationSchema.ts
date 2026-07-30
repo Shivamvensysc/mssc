@@ -164,7 +164,9 @@ export const registrationSchema = z
       .regex(/^[a-zA-Z\s.'-]+$/, "Name can only contain letters and spaces"),
 
     citizen: yesNo,
-    dialect: yesNo,
+    dialect: z.string().refine((val) => val === 'Yes', {
+      message: "You are not eligible for this post.",
+    }),
 
     residencyConfirmed: z.literal(true, {
       message: "You must confirm residency eligibility",
