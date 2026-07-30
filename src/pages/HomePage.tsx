@@ -48,7 +48,7 @@ export const HomePage: React.FC = () => {
               <div className="space-y-3 text-xs text-blue-100">
                 <div>
                   <span className="block text-blue-200">Online Link Active From:</span>
-                  <span className="text-sm font-semibold text-white">31/08/2026 (05:00 PM)</span>
+                  <span className="text-sm font-semibold text-white">31/07/2026 (05:00 PM)</span>
                 </div>
                 <div>
                   <span className="block text-blue-200">Closing Date for Submission:</span>
