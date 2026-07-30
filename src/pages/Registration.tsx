@@ -1969,57 +1969,8 @@ export default function RegistrationForm() {
     return () => clearInterval(timer);
   }, [showMobileOtpModal, mobileOtpTimer]);
 
-  // useEffect(() => {
-  //   const { dobDay, dobMonth, dobYear } = formData;
-    
-  //   if (dobDay && dobMonth && dobYear) {
-  //     const day = parseInt(dobDay, 10);
-  //     const year = parseInt(dobYear, 10);
-      
-  //     const isNumericMonth = !isNaN(Number(dobMonth));
-  //     const monthIndex = isNumericMonth
-  //       ? parseInt(dobMonth, 10) - 1
-  //       : new Date(`${dobMonth} 1, 2000`).getMonth();
-
-  //     const dobObj = new Date(year, monthIndex, day);
-  //     const isValidDate =
-  //       dobObj.getFullYear() === year &&
-  //       dobObj.getMonth() === monthIndex &&
-  //       dobObj.getDate() === day;
-
-  //     if (!isValidDate) {
-  //       setErrors((prev) => ({ ...prev, dobDay: "Invalid date selected." }));
-  //       return;
-  //     }
-
-  //     const today = new Date();
-  //     if (dobObj > today) {
-  //       setErrors((prev) => ({ ...prev, dobDay: "Date of birth cannot be in the future." }));
-  //       return;
-  //     }
-
-  //     let age = today.getFullYear() - dobObj.getFullYear();
-  //     const monthDiff = today.getMonth() - dobObj.getMonth();
-      
-  //     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobObj.getDate())) {
-  //       age--;
-  //     }
-
-  //     if (age < 18) {
-  //       setErrors((prev) => ({ ...prev, dobDay: "Candidate must be at least 18 years old." }));
-  //     } else if (age > 38) {
-  //       setErrors((prev) => ({ ...prev, dobDay: "Age cannot exceed 38 years." }));
-  //     } else {
-  //       setErrors((prev) => ({
-  //         ...prev,
-  //         dobDay: undefined,
-  //         dobMonth: undefined,
-  //         dobYear: undefined
-  //       }));
-  //     }
-  //   }
-  // }, [formData.dobDay, formData.dobMonth, formData.dobYear]);
-
+  
+  
   const getMaxDaysInSelectedMonth = () => {
     const { dobMonth, dobYear } = formData;
     if (!dobMonth) return 31;
@@ -2569,7 +2520,7 @@ export default function RegistrationForm() {
                         <option value="" disabled hidden>Please Select</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
-                        <option value="other">Transgender</option>
+                        <option value="transgender">Transgender</option>
                       </select>
                       <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                     </div>
