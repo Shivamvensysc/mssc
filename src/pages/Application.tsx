@@ -2442,7 +2442,7 @@ const isDisabled = (field: string) => {
                   Year <span style={{ color: theme.gold }}>*</span>
                 </th>
                 <th className="p-3 text-xs font-semibold text-white uppercase tracking-wide">
-                  Percentage <span style={{ color: theme.gold }}>*</span>
+                  Percentage/CGPA <span style={{ color: theme.gold }}>*</span>
                 </th>
               </tr>
             </thead>
