@@ -596,7 +596,9 @@ export default function MultiStepForm() {
               if (pInfo.pwdStatus) personalInfoUpdates.pwdStatus = pInfo.pwdStatus;
               if (pInfo.typeOfDisability) personalInfoUpdates.typeOfDisability = pInfo.typeOfDisability;
               if (pInfo.is40Percent) personalInfoUpdates.is40Percent = pInfo.is40Percent;
-              if (pInfo.stateGovEmployee) personalInfoUpdates.stateGovEmployee = pInfo.stateGovEmployee;
+              // if (pInfo.stateGovEmployee) personalInfoUpdates.stateGovEmployee = pInfo.stateGovEmployee;
+              // CHANGE IT TO:
+              if (pInfo.stateGovEmployee && step0.govEmployee === undefined) personalInfoUpdates.stateGovEmployee = pInfo.stateGovEmployee;
               if (pInfo.sponsoredExchange) personalInfoUpdates.sponsoredExchange = pInfo.sponsoredExchange;
               if (pInfo.identificationMarks) personalInfoUpdates.identificationMarks = pInfo.identificationMarks;
             }
@@ -867,7 +869,7 @@ export default function MultiStepForm() {
         setIsProcessing(false);
       }
    } else if (step === 2) {
-      const requiredDocs = ['photograph', 'signature','10thmarksheet', '12thmarksheet'];
+      const requiredDocs = ['photograph', 'signature','10thmarksheet'];
       if (formData.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
       if (formData.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
 
@@ -2197,11 +2199,22 @@ function Step1Application({
     'D.El.Ed. equivalent recognized RCI qualification',
   ];
 
-  const isDisabled = (field: string) => {
-    if (!isDataFetched) return false;
-    const step0Fields = ['name', 'dob', 'gender', 'mobile', 'email', 'maritalStatus', 'nationality', 'district', 'reservationCategory', 'pwdStatus'];
-    return step0Fields.includes(field);
-  };
+  // const isDisabled = (field: string) => {
+  //   if (!isDataFetched) return false;
+  //   const step0Fields = ['name', 'dob', 'gender', 'mobile', 'email', 'maritalStatus', 'nationality', 'district', 'reservationCategory', 'pwdStatus'];
+  //   return step0Fields.includes(field);
+  // };
+
+  // CHANGE IT TO include 'stateGovEmployee':
+const isDisabled = (field: string) => {
+  if (!isDataFetched) return false;
+  const step0Fields = [
+    'name', 'dob', 'gender', 'mobile', 'email', 'maritalStatus', 
+    'nationality', 'district', 'reservationCategory', 'pwdStatus', 
+    'stateGovEmployee' // <-- Added this
+  ];
+  return step0Fields.includes(field);
+};
 
   const isGovEmployee = data.personalInfo.stateGovEmployee === 'yes';
 
@@ -2293,6 +2306,16 @@ function Step1Application({
             required 
             disabled={isDisabled('pwdStatus')}
           />
+
+           {/* CHANGE IT TO pass the disabled prop: */}
+<FormSelect 
+  label="State Government Employee" 
+  value={data.personalInfo.stateGovEmployee} 
+  onChange={(e) => updateField('personalInfo', 'stateGovEmployee', e.target.value)} 
+  options={yesNoOptions.map(y => ({ value: y, label: y }))}
+  required 
+  disabled={isDisabled('stateGovEmployee')} // <-- Added this
+/>
           
           {/* BOTTOM BLOCK: Editable (White Block) fields */}
           <FormSelect 
@@ -2334,13 +2357,16 @@ function Step1Application({
               />
             </>
           )}
-          <FormSelect 
+          {/* <FormSelect 
             label="State Government Employee" 
             value={data.personalInfo.stateGovEmployee} 
             onChange={(e) => updateField('personalInfo', 'stateGovEmployee', e.target.value)} 
             options={yesNoOptions.map(y => ({ value: y, label: y }))}
             required 
-          />
+          /> */}
+
+          
+
           <FormSelect 
             label="Sponsored by Employment Exchange" 
             value={data.personalInfo.sponsoredExchange} 
@@ -2694,7 +2720,7 @@ function Step2Documents({
     }
   };
 
-  const requiredDocs = ['photograph', 'signature', '10thmarksheet', '12thmarksheet'];
+  const requiredDocs = ['photograph', 'signature', '10thmarksheet'];
   if (data.personalInfo.pwdStatus === 'yes') requiredDocs.push('pwdCert');
   if (data.personalInfo.stateGovEmployee === 'yes') requiredDocs.push('nocCert');
 
@@ -2703,9 +2729,9 @@ function Step2Documents({
     const filtered: [string, File | null][] = [];
 
     for (const [key, value] of entries) {
-      if (key === 'reservationCert') {
+    if (key === 'reservationCert') {
         const category = data.personalInfo.reservationCategory;
-        if (category === 'General' || category === 'Other') continue;
+        if (category === 'General' || category === 'Other' || category === 'UR') continue;
       }
       
       if (key === 'nocCert') {
