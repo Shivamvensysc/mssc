@@ -573,7 +573,7 @@ export const registrationSchema = z
       message: "Please select a gender",
     }),
 
-    maritalStatus: z.enum(["single", "married","divorced"], {
+    maritalStatus: z.enum(["single", "married","Divorced"], {
       message: "Please select a marital status",
     }),
 
