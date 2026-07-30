@@ -3114,7 +3114,7 @@
 import React, { useState, useId, useEffect } from 'react';
 import axios from 'axios';
 import { z } from 'zod';
-import { getCategories } from '../api/registrationApi';
+import { getCategories,  getDisabilities } from '../api/registrationApi';
 import { useFaceLiveness } from '../hooks/useFaceLiveness';
 import ShowallDeatilsPage from '../components/ShowallDeatilsPage';
 import { 
@@ -3156,18 +3156,19 @@ const textOnlyField = (label: string) =>
     .string()
     .trim()
     .min(1, `${label} is required`)
-    .regex(TEXT_ONLY_REGEX, `${label} must contain only letters, numbers are not allowed`);
-
+    .refine((val) => val === '' || TEXT_ONLY_REGEX.test(val), {
+      message: `${label} must contain only letters, numbers are not allowed`,
+    });
 // ==========================================
 // VALIDATION: ZOD SCHEMAS
 // ==========================================
 const addressValidationSchema = z.object({
-  village: textOnlyField('Village / Locality'),
-  city: textOnlyField('City / Town'),
-  state: z.string().min(1, 'State is required'),
-  district: textOnlyField('District'),
+  village: z.string().trim().min(1, 'Village / Locality is required'),
+  city: z.string().trim().min(1, 'City / Town is required'),
+  state: z.string().trim().min(1, 'State is required'),
+  district: z.string().trim().min(1, 'District is required'),
   pincode: z.string().regex(PINCODE_REGEX, 'Enter a valid 6-digit PIN code'),
-  policeStation: textOnlyField('Police Station'),
+  policeStation: z.string().trim().min(1, 'Police Station is required'),
 });
 
 const educationLevelValidationSchema = (label: string, mandatory: boolean) =>
@@ -3233,10 +3234,9 @@ const personalInfoValidationSchema = z
     reservationCategory: z.string().min(1, 'Reservation category is required'),
     pwdStatus: z.string(),
     typeOfDisability: z
-      .string()
-      .optional()
-      .default('')
-      .refine((v) => !v || TEXT_ONLY_REGEX.test(v), 'Type of disability must contain only letters, numbers are not allowed'),
+  .string()
+  .optional()
+  .default(''),
     is40Percent: z.string().optional().default('no'),
     stateGovEmployee: z.string(),
     sponsoredExchange: z.string(),
@@ -3666,8 +3666,14 @@ export default function MultiStepForm() {
             if (step0.nationality) personalInfoUpdates.nationality = step0.nationality;
             if (step0.selectDistrict) personalInfoUpdates.district = step0.selectDistrict;
             if (step0.reservationCategory) personalInfoUpdates.reservationCategory = step0.reservationCategory;
+            // if (step0.isPwd !== undefined) personalInfoUpdates.pwdStatus = step0.isPwd ? 'yes' : 'no';
+            // --- UPDATED: Handle PWD, Disability Type, and 40% auto-fill ---
+            // Step 0 specific overrides
             if (step0.isPwd !== undefined) personalInfoUpdates.pwdStatus = step0.isPwd ? 'yes' : 'no';
+            if (step0.type_of_disability) personalInfoUpdates.typeOfDisability = step0.type_of_disability;
             if (step0.govEmployee !== undefined) personalInfoUpdates.stateGovEmployee = step0.govEmployee ? 'yes' : 'no';
+
+           
             
             // Fill from step1 if available
             if (step1.personalInfo) {
@@ -3686,8 +3692,13 @@ export default function MultiStepForm() {
               if (pInfo.reservationCategory) personalInfoUpdates.reservationCategory = pInfo.reservationCategory;
               // if (pInfo.pwdStatus) personalInfoUpdates.pwdStatus = pInfo.pwdStatus;
               if (pInfo.pwdStatus && step0.isPwd === undefined) personalInfoUpdates.pwdStatus = pInfo.pwdStatus;
-              if (pInfo.typeOfDisability) personalInfoUpdates.typeOfDisability = pInfo.typeOfDisability;
+              if (pInfo.typeOfDisability && !step0.type_of_disability) personalInfoUpdates.typeOfDisability = pInfo.typeOfDisability;
               if (pInfo.is40Percent) personalInfoUpdates.is40Percent = pInfo.is40Percent;
+            // FORCE 40% auto-select if PwD is true and a disability type is selected
+            if (personalInfoUpdates.pwdStatus === 'yes' && personalInfoUpdates.typeOfDisability) {
+              personalInfoUpdates.is40Percent = 'yes';
+            }
+
               // CHANGE IT TO:
               if (pInfo.stateGovEmployee && step0.govEmployee === undefined) personalInfoUpdates.stateGovEmployee = pInfo.stateGovEmployee;
               if (pInfo.sponsoredExchange) personalInfoUpdates.sponsoredExchange = pInfo.sponsoredExchange;
@@ -3837,7 +3848,7 @@ export default function MultiStepForm() {
     const formDataToSend = new FormData();
 
     Object.entries(formData.documents).forEach(([key, file]) => {
-      if (file) formDataToSend.append(key, file);
+      if (file && key !== 'pwdCert') formDataToSend.append(key, file);
     });
 
     if (formData.teacherEligibility.tenPlusTwoCert) {
@@ -3850,6 +3861,12 @@ export default function MultiStepForm() {
       formDataToSend.append('dedCert', formData.teacherEligibility.dedCert);
     }
    
+    // EXPLICITLY APPEND PWD CERTIFICATE
+    if (formData.documents.pwdCert) {
+      // NOTE: If your backend expects a different name like "pwdCertificate", change the string below!
+      formDataToSend.append('pwdCert', formData.documents.pwdCert); 
+      console.log('Sending PWD Cert:', formData.documents.pwdCert.name); // Debug log
+    }
     
 
     formDataToSend.append('applicationId', applicationId);
@@ -3945,7 +3962,15 @@ export default function MultiStepForm() {
       }
    } else if (step === 2) {
       const requiredDocs = ['photograph', 'signature','10thmarksheet', '12thmarksheet', 'permanentResCert', 'domicileCert'];
-     if (formData.personalInfo.stateGovEmployee === 'yes') {
+     
+      // BULLETPROOF CHECK: Case-insensitive check to ensure it ALWAYS requires pwdCert
+      const isPwd = String(formData.personalInfo.pwdStatus).toLowerCase() === 'yes';
+      
+      if (isPwd) {
+        requiredDocs.push('pwdCert');
+      }
+      
+      if (formData.personalInfo.stateGovEmployee === 'yes') {
   requiredDocs.push('nocCert');
   requiredDocs.push('experienceCert'); // <-- This makes it block the user from proceeding
 }
@@ -4952,11 +4977,7 @@ function FileUploadField({
               <p className="font-semibold text-[15px] mb-1.5" style={{ color: disabled ? '#9ca3af' : theme.textPrimary }}>
                 {disabled ? 'No file uploaded' : 'Choose a file or drag & drop it here'}
               </p>
-              
-              <p className="text-xs mb-4 font-medium" style={{ color: theme.textMuted }}>
-                JPEG, PNG, PDF formats, up to 5MB
-              </p>
-              
+               
               {!disabled && (
                 <div 
                   className="flex items-center gap-2 px-5 py-1.5 bg-white rounded-lg border text-sm font-semibold shadow-sm"
@@ -5034,7 +5055,7 @@ function AddressFields({
       <FormField
         label="Village / Locality"
         value={address.village}
-        onChange={(e) => onChange('village', sanitizeTextOnly(e.target.value))}
+        onChange={(e) => onChange('village', e.target.value)}
         required
         disabled={disabled}
         error={errors?.village}
@@ -5042,7 +5063,7 @@ function AddressFields({
       <FormField
         label="City / Town"
         value={address.city}
-        onChange={(e) => onChange('city', sanitizeTextOnly(e.target.value))}
+        onChange={(e) => onChange('city', e.target.value)}
         required
         disabled={disabled}
         error={errors?.city}
@@ -5082,7 +5103,7 @@ function AddressFields({
       <FormField
         label="Police Station"
         value={address.policeStation}
-        onChange={(e) => onChange('policeStation', sanitizeTextOnly(e.target.value))}
+        onChange={(e) => onChange('policeStation', e.target.value)}
         required
         disabled={disabled}
         error={errors?.policeStation}
@@ -5110,9 +5131,9 @@ function Step1Application({
   const [stateOptions, setStateOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [districtOptions, setDistrictOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [reservationOptions, setReservationOptions] = useState<Array<{ value: string; label: string }>>([]);
-  const [loadingStates, setLoadingStates] = useState({ states: false, districts: false, categories: false });
+  const [loadingStates, setLoadingStates] = useState({ states: false, districts: false, categories: false , disabilities: false});
   const [statesMap, setStatesMap] = useState<Record<string, number>>({});
-
+const [disabilityOptions, setDisabilityOptions] = useState<Array<{ value: string; label: string }>>([]); // NEW
   const handleStateChange = async (stateName: string, currentMap: Record<string, number> = statesMap) => {
     const stateId = currentMap[stateName];
     if (!stateId) return;
@@ -5138,12 +5159,35 @@ function Step1Application({
 
   useEffect(() => {
     const loadInitialData = async () => {
-      setLoadingStates(prev => ({ ...prev, states: true, categories: true }));
+      setLoadingStates(prev => ({ ...prev, states: true, categories: true, disabilities: true }));
       try {
-        const [statesResponse, categoriesResponse] = await Promise.all([
+        const [statesResponse, categoriesResponse, disabilitiesData] = await Promise.all([
           apiService.getStates(),
-          getCategories()
+          getCategories(),
+          getDisabilities()
         ]);
+
+        // === YOUR NEW DISABILITIES LOGIC ===
+        const rawList = Array.isArray(disabilitiesData?.data?.disabilities)
+          ? disabilitiesData.data.disabilities
+          : Array.isArray(disabilitiesData?.data)
+          ? disabilitiesData.data
+          : Array.isArray(disabilitiesData)
+          ? disabilitiesData
+          : [];
+        
+        if (rawList.length > 0 || disabilitiesData?.success) {
+          // Map raw list into { label, value } format required by FormSelect
+          const options = rawList.map((d: any) => {
+            const label = typeof d === 'string' ? d : d.label || d.name || d.type;
+            const value = typeof d === 'string' ? d : d.value || d.id || label;
+            return { label, value };
+          });
+          if (data.personalInfo.typeOfDisability && !options.find((o: any) => o.value === data.personalInfo.typeOfDisability)) {
+            options.push({ label: data.personalInfo.typeOfDisability, value: data.personalInfo.typeOfDisability });
+          }
+          setDisabilityOptions(options);
+        }
 
         if (statesResponse.success) {
           const options = statesResponse.data.map((state: any) => ({
@@ -5180,7 +5224,7 @@ function Step1Application({
       } catch (error) {
         console.error('Failed to load initial data:', error);
       } finally {
-        setLoadingStates(prev => ({ ...prev, states: false, categories: false }));
+        setLoadingStates(prev => ({ ...prev, states: false, categories: false, disabilities: false }));
       }
     };
     loadInitialData();
@@ -5280,9 +5324,11 @@ const isDisabled = (field: string) => {
   if (!isDataFetched) return false;
   const step0Fields = [
     'name', 'dob', 'gender', 'mobile', 'email', 'maritalStatus', 
-    'nationality', 'district', 'reservationCategory', 'pwdStatus', 
+    'nationality', 'district', 'reservationCategory', 'pwdStatus', 'typeOfDisability',
     'stateGovEmployee'
   ];
+  // <--- Added logic to disable is40Percent if both conditions are met
+    if (field === 'is40Percent' && data.personalInfo.pwdStatus === 'yes' && data.personalInfo.typeOfDisability) return true;
   return step0Fields.includes(field);
 };
 
@@ -5369,7 +5415,7 @@ const isDisabled = (field: string) => {
             placeholder="Select Category"
           />
           <FormSelect 
-            label="PWD Status" 
+            label="Pwd Status" 
             value={data.personalInfo.pwdStatus} 
             onChange={(e) => updateField('personalInfo', 'pwdStatus', e.target.value)} 
             options={yesNoOptions.map(y => ({ value: y, label: y }))}
@@ -5410,12 +5456,15 @@ const isDisabled = (field: string) => {
           />
           {data.personalInfo.pwdStatus === 'yes' && (
             <>
-              <FormField 
+              <FormSelect 
                 label="Type of Disability" 
                 value={data.personalInfo.typeOfDisability} 
-                onChange={(e) => updateField('personalInfo', 'typeOfDisability', sanitizeTextOnly(e.target.value))} 
+                onChange={(e) => updateField('personalInfo', 'typeOfDisability', e.target.value)} 
+                options={disabilityOptions}
                 required 
-                error={errors?.personalInfo?.typeOfDisability}
+                disabled={isDisabled('typeOfDisability') || loadingStates.disabilities}
+                loading={loadingStates.disabilities}
+                placeholder="Select Disability Type"
               />
               <FormSelect 
                 label="Is 40% or More?" 
@@ -5423,6 +5472,7 @@ const isDisabled = (field: string) => {
                 onChange={(e) => updateField('personalInfo', 'is40Percent', e.target.value)} 
                 options={yesNoOptions.map(y => ({ value: y, label: y }))}
                 required 
+                disabled={isDisabled('is40Percent')}
               />
             </>
           )}
@@ -5622,7 +5672,27 @@ const isDisabled = (field: string) => {
             <FormField
               label="Cross-disability Inclusive Education Training Period (Months)"
               value={data.teacherEligibility.crossDisabilityPeriod}
-              onChange={(e) => updateField('teacherEligibility', 'crossDisabilityPeriod', e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                // 1. Update the field (this also internally clears errors)
+                updateField('teacherEligibility', 'crossDisabilityPeriod', val);
+                
+                // 2. Real-time validation: check if less than 6
+                if (val !== '' && parseInt(val, 10) < 6) {
+                  // Use setTimeout to ensure this error sets AFTER updateField clears it
+                  setTimeout(() => {
+                    if (setErrors) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        teacherEligibility: {
+                          ...prev.teacherEligibility,
+                          crossDisabilityPeriod: 'Training period cannot be less than 6 months',
+                        },
+                      }));
+                    }
+                  }, 0);
+                }
+              }}
               required={!data.teacherEligibility.trainingNotAvailable}
               error={errors?.teacherEligibility?.crossDisabilityPeriod}
             />
@@ -5967,7 +6037,7 @@ function Step3Payment({
     }
   };
 
-  const feeAmount = paymentData?.amount || 500;
+  const feeAmount = paymentData?.amount ;
   const isFeePaid = paymentData?.status === 'paid' || paymentData?.status === 'completed' || paymentData?.status === 'completed';
 
   return (

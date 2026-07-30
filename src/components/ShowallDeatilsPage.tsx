@@ -567,32 +567,8 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
           </div>
         </SectionCard>
 
-        {/* ============ WORK EXPERIENCE ============ */}
-        <SectionCard icon={Briefcase} title="Work Experience">
-          {hasExperience ? (
-            isExperienceArray ? (
-              <div className="flex flex-col gap-6">
-                {(rawExperience as any[]).map((exp, idx) => (
-                  <div key={idx} className="grid grid-cols-2 sm:grid-cols-3 gap-5 pb-5 border-b border-gray-100 last:border-b-0 last:pb-0">
-                    <Field label="Designation" value={exp.designation} />
-                    <Field label="Service Period" value={exp.duration ? `${exp.duration} months` : undefined} />
-                    <Field label="Reason for Leaving" value={exp.reasonLeaving} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                <Field label="Designation" value={(rawExperience as any).employerDesignation} />
-                <Field label="Service Period" value={(rawExperience as any).servicePeriodMonths ? `${(rawExperience as any).servicePeriodMonths} months` : undefined} />
-                <Field label="Reason for Leaving" value={(rawExperience as any).reasonForLeaving} />
-              </div>
-            )
-          ) : (
-            <p className="text-sm" style={{ color: theme.textMuted }}>
-              No prior work experience declared.
-            </p>
-          )}
-        </SectionCard>
+       
+       
 
         {/* ============ DOCUMENTS ============ */}
         <SectionCard icon={FileText} title="Uploaded Documents" subtitle="Click the icon to view a document in a new tab">
