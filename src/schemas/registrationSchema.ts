@@ -609,7 +609,7 @@ export const registrationSchema = z
   .superRefine((data, ctx) => {
     // ---- Mobile number rules ----
     const mobile = data.mobile;
-    if (mobile.startsWith("0") || mobile.startsWith("91")) {
+    if (mobile.startsWith("0")) {
       ctx.addIssue({
         path: ["mobile"],
         code: z.ZodIssueCode.custom,

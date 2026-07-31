@@ -2059,7 +2059,7 @@ export default function RegistrationForm() {
 
   const getMobileHint = (value: string): string | undefined => {
     if (!value) return undefined;
-    if (value.startsWith('0')  || value.startsWith('91')) {
+    if (value.startsWith('0')) {
       return "Do not prefix '0'  before the mobile no.";
     }
     if (!MOBILE_REGEX.test(value)) {
