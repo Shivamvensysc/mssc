@@ -2501,7 +2501,7 @@ export default function RegistrationForm() {
                         disabled={isAccountCreated}
                         className="w-5 h-5 text-[#0076b6] border-outline rounded focus:ring-[#0076b6] disabled:opacity-60 disabled:cursor-not-allowed"
                       />
-                      <span className="font-body-md text-on-surface group-hover:text-[#0076b6] transition-colors">I confirm residency eligibility</span>
+                      <span className="font-body-md text-on-surface group-hover:text-[#0076b6] transition-colors">I hereby confirm that I am a permanent resident of Manipur.</span>
                     </label>
                     <FieldError message={errors.residencyConfirmed} />
                   </div>
