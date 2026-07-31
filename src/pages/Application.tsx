@@ -6122,7 +6122,7 @@ function Step3Payment({
               htmlFor="acknowledgement" 
               className="text-xs sm:text-sm font-bold text-slate-900 cursor-pointer leading-snug"
             >
-              I acknowledge the examination fee is non-refundable and non-transferable. <span className="font-bold text-slate-900">· मैं स्वीकार करता/करती हूँ कि शुल्क अप्रतिदेय है।</span>
+              I acknowledge that the examination fee is non-refundable and non-transferable. <span className="font-bold text-slate-900">· मैं स्वीकार करता/करती हूँ कि शुल्क अप्रतिदेय है।</span>
             </label>
           </div>
         )}
