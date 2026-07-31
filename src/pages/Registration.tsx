@@ -2389,6 +2389,23 @@ const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>)
     setShowSuccessModal(true);
   };
 
+  const handleDialectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    
+    // Update the form data with the selected value
+    setFormData((prev) => ({ ...prev, dialect: value }));
+
+    // Apply the eligibility validation
+    if (value === 'No') {
+      const msg = "You are not eligible for registration if you do not speak Manipuri or a tribal dialect.";
+      setErrors((prev) => ({ ...prev, dialect: msg }));
+      toast.error(msg);
+    } else {
+      // Clear the error if they choose 'Yes'
+      setErrors((prev) => ({ ...prev, dialect: undefined }));
+    }
+  };
+
   const handleResendMobileOtp = async () => {
     if (mobileResendCooldown > 0) return;
     setIsResendingMobileOtp(true);
@@ -2546,7 +2563,8 @@ const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>)
                             name="dialect"
                             value={opt}
                             checked={formData.dialect === opt}
-                            onChange={handleInputChange}
+                            // onChange={handleInputChange}
+                            onChange={handleDialectChange}
                             disabled={isAccountCreated}
                             className="w-5 h-5 text-[#0076b6] border-outline focus:ring-[#0076b6] disabled:opacity-60 disabled:cursor-not-allowed"
                           />
