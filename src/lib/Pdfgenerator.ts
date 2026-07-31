@@ -176,15 +176,21 @@ const DOC_LABELS: Record<string, string> = {
   photograph: "Photograph",
   signature: "Signature",
   livePhoto: "Live Photo",
-  eligibilityCert: "Eligibility Certificate",
+
   permanentResCert: "Permanent Residence Certificate",
   domicileCert: "Domicile Certificate",
-  hslcMarksheet: "HSLC Marksheet",
-  hslcProvCert: "HSLC Provisional Certificate",
   nocCert: "No Objection Certificate",
   reservationCert: "Reservation Certificate",
   pwdCert: "PWD Certificate",
-  tenPlusTwoCert: "10+2 / Equivalent Certificate",
+
+  
+  // --- NEW KEYS ADDED BELOW BASED ON API RESPONSE ---
+  "10thmarksheet": "10th Marksheet",
+  "12thmarksheet": "12th Marksheet",
+  graduationMarksheet: "Graduation Marksheet",
+  tet1Cert: "TET 1 Certificate",
+  dedCert: "D.Ed Certificate",
+  experienceCert: "Experience Certificate ", // Catches the base key, dynamic _0, _1 are handled below it
 };
 
 const EXPERIENCE_CERT_PREFIX = "experienceCert_";
@@ -373,11 +379,11 @@ function shapeSlipData(apiData: ApiData): SlipData {
       label: DOC_LABELS[key],
       url: step2[key] || null,
     })),
-    ...experienceCertKeys.map((key, idx) => ({
-      key,
-      label: `Experience Certificate ${idx + 1}`,
-      url: step2[key] || null,
-    })),
+    // ...experienceCertKeys.map((key, idx) => ({
+    //   key,
+    //   label: `Experience Certificate ${idx + 1}`,
+    //   url: step2[key] || null,
+    // })),
   ];
 
  
