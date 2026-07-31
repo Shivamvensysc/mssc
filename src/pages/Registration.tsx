@@ -2059,8 +2059,8 @@ export default function RegistrationForm() {
 
   const getMobileHint = (value: string): string | undefined => {
     if (!value) return undefined;
-    if (value.startsWith('0') || value.startsWith('+91') || value.startsWith('91')) {
-      return "Do not prefix '0' or '+91' before the mobile no.";
+    if (value.startsWith('0')  || value.startsWith('91')) {
+      return "Do not prefix '0'  before the mobile no.";
     }
     if (!MOBILE_REGEX.test(value)) {
       return 'Enter a valid 10-digit mobile number starting with 6-9.';
