@@ -280,7 +280,7 @@ export const HomePage: React.FC = () => {
             <div className="lg:col-span-2 space-y-6">
               <div className="inline-flex flex-col sm:flex-row gap-2">
                 <span className="bg-white/20 text-white border border-white/30 px-3 py-1 rounded text-xs font-bold tracking-wide uppercase">Advt. No. 02/2026</span>
-                <span className="bg-white/20 text-white border border-white/30 px-3 py-1 rounded text-xs font-bold tracking-wide uppercase">Dated: 20/07/2026</span>
+                <span className="bg-white/20 text-white border border-white/30 px-3 py-1 rounded text-xs font-bold tracking-wide uppercase">Dated: 22/07/2026</span>
               </div>
               <h1 className="text-3xl lg:text-5xl font-extrabold leading-tight tracking-tight">
                 Recruitment of 80 Special Primary Teachers
