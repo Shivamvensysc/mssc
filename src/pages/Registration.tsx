@@ -2085,21 +2085,47 @@ export default function RegistrationForm() {
     return undefined;
   };
 
+  // const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { value } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     disability40Percent: value,
+  //     // Clear the disability type if they switch 40% to 'No'
+  //     disabilityType: value === 'Yes' ? prev.disabilityType : '', 
+  //   }));
+  //   setErrors((prev) => ({
+  //     ...prev,
+  //     disability40Percent: undefined,
+  //     disabilityType: undefined,
+  //   }));
+  // };
+
   const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
+    
     setFormData((prev) => ({
       ...prev,
       disability40Percent: value,
+      // NEW: Automatically set PH to 'No' if 40% disability is 'No'
+      ph: value === 'No' ? 'No' : prev.ph,
       // Clear the disability type if they switch 40% to 'No'
       disabilityType: value === 'Yes' ? prev.disabilityType : '', 
     }));
-    setErrors((prev) => ({
-      ...prev,
-      disability40Percent: undefined,
-      disabilityType: undefined,
-    }));
+    
+    setErrors((prev) => {
+      const newErrors = {
+        ...prev,
+        disability40Percent: undefined,
+        disabilityType: undefined,
+      };
+      // NEW: Clear the PH error if we automatically updated it
+      if (value === 'No') {
+        newErrors.ph = undefined;
+      }
+      return newErrors;
+    });
   };
-
+  
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, email: value }));
