@@ -6118,6 +6118,8 @@ function Step3Payment({
               onChange={(e) => setIsAcknowledged(e.target.checked)}
               className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-800 cursor-pointer accent-slate-900"
             />
+
+            
             <label 
               htmlFor="acknowledgement" 
               className="text-xs sm:text-sm font-bold text-slate-900 cursor-pointer leading-snug"
