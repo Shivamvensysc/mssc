@@ -2607,8 +2607,8 @@ const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>)
                         className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-[#0076b6] focus:ring-2 focus:ring-[#0076b6]/20 transition-all font-body-md outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="" disabled hidden>Please Select</option>
-                        <option value="single">Married</option>
-                        <option value="married">Unmarried</option>
+                        <option value="married">Married</option>
+                        <option value="unmarried">Unmarried</option>
                         <option value="Divorced">Widow/Divorced women/women judicialy separated</option>
                       </select>
                       <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
