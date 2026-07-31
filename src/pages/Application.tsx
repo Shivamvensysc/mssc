@@ -129,6 +129,7 @@ const personalInfoValidationSchema = z
     stateGovEmployee: z.string(),
     sponsoredExchange: z.string(),
     sponsorNo: z.string().optional().default(''),
+    isScribe: z.string().optional().default('no'),
     identificationMarks: z
       .string()
       .optional()
@@ -316,6 +317,7 @@ interface FormState {
     pwdStatus: string;
     typeOfDisability: string;
     is40Percent: string;
+    isScribe: string;
     stateGovEmployee: string;
     sponsoredExchange: string;
     identificationMarks: string;
@@ -394,6 +396,7 @@ const initialState: FormState = {
     pwdStatus: 'no',
     typeOfDisability: '',
     is40Percent: 'no',
+    isScribe: 'no',
     stateGovEmployee: 'no',
     sponsoredExchange: 'no',
     identificationMarks: '',
@@ -472,6 +475,7 @@ const FIELD_LABELS: Record<string, string> = {
   examCity: 'Examination City',
   tet1Cert: 'TET-1 Certificate',
   sponsorNo: 'Sponsor No. for Employment Exchange',
+  isScribe: 'Scribe Required',
 };
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -633,6 +637,8 @@ export default function MultiStepForm() {
             if (personalInfoUpdates.pwdStatus === 'yes' && personalInfoUpdates.typeOfDisability) {
               personalInfoUpdates.is40Percent = 'yes';
             }
+
+            if (pInfo.isScribe) personalInfoUpdates.isScribe = pInfo.isScribe; // <-- ADD THIS
 
               // CHANGE IT TO:
               if (pInfo.stateGovEmployee && step0.govEmployee === undefined) personalInfoUpdates.stateGovEmployee = pInfo.stateGovEmployee;
@@ -2421,6 +2427,18 @@ const isDisabled = (field: string) => {
                 required 
                 disabled={isDisabled('is40Percent')}
               />
+
+              {/* <-- ADD THIS NEW BLOCK --> */}
+              {data.personalInfo.typeOfDisability && data.personalInfo.is40Percent === 'yes' && (
+                <FormSelect 
+                  label="Do you need a Scribe?" 
+                  value={data.personalInfo.isScribe} 
+                  onChange={(e) => updateField('personalInfo', 'isScribe', e.target.value)} 
+                  options={yesNoOptions.map(y => ({ value: y, label: y }))}
+                  required 
+                  disabled={isDisabled('isScribe')}
+                />
+              )}
             </>
           )}
 
@@ -3190,13 +3208,32 @@ function Step4Review({
         <InfoGrid obj={data.personalInfo} />
       </FormSection> */}
 
-      <FormSection number={1} title="Personal Details">
+      {/* <FormSection number={1} title="Personal Details">
     <InfoGrid obj={
       data.personalInfo.sponsoredExchange === 'yes' 
         ? data.personalInfo 
         : Object.fromEntries(Object.entries(data.personalInfo).filter(([k]) => k !== 'sponsorNo'))
     } />
-  </FormSection>
+  </FormSection> */}
+
+  <FormSection number={1} title="Personal Details">
+        <InfoGrid obj={
+          Object.fromEntries(
+            Object.entries(data.personalInfo).filter(([k]) => {
+              // Hide sponsorNo if not sponsored
+              if (k === 'sponsorNo' && data.personalInfo.sponsoredExchange !== 'yes') return false;
+              
+              // Hide isScribe if PwD is no, or disability is under 40%
+              if (k === 'isScribe' && !(data.personalInfo.pwdStatus === 'yes' && data.personalInfo.is40Percent === 'yes')) return false;
+              
+              // Hide 40Percent and typeOfDisability if PwD is no (optional cleanup)
+              if ((k === 'is40Percent' || k === 'typeOfDisability') && data.personalInfo.pwdStatus !== 'yes') return false;
+
+              return true;
+            })
+          )
+        } />
+      </FormSection>
 
       <FormSection number={2} title="Permanent Address">
         <InfoGrid obj={data.address.permanent} />
