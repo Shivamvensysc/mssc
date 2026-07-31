@@ -2003,25 +2003,67 @@ export default function RegistrationForm() {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  const handlePhChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      ph: value,
-      disabilityType: value === 'Yes' ? prev.disabilityType : '',
-      disability40Percent: value === 'Yes' ? prev.disability40Percent : '',
-    }));
-    setErrors((prev) => ({
-      ...prev,
-      ph: undefined,
-      disabilityType: undefined,
-      disability40Percent: undefined,
-    }));
+  // const handlePhChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { value } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     ph: value,
+  //     disabilityType: value === 'Yes' ? prev.disabilityType : '',
+  //     disability40Percent: value === 'Yes' ? prev.disability40Percent : '',
+  //   }));
+  //   setErrors((prev) => ({
+  //     ...prev,
+  //     ph: undefined,
+  //     disabilityType: undefined,
+  //     disability40Percent: undefined,
+  //   }));
 
-    if (value === 'Yes') {
-      fetchDisabilities();
-    }
-  };
+  //   if (value === 'Yes') {
+  //     fetchDisabilities();
+  //   }
+  // };
+
+  // 1. Resets sub-fields whenever PH toggle changes
+const handlePhChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { value } = e.target;
+
+  setFormData((prev) => ({
+    ...prev,
+    ph: value,
+    disability40Percent: '', // Always reset when switching PH status
+    disabilityType: '',
+  }));
+
+  setErrors((prev) => ({
+    ...prev,
+    ph: undefined,
+    disabilityType: undefined,
+    disability40Percent: undefined,
+  }));
+
+  if (value === 'Yes') {
+    fetchDisabilities();
+  }
+};
+
+// 2. Automatically sets PH = 'No' if 40% disability = 'No'
+const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { value } = e.target;
+
+  setFormData((prev) => ({
+    ...prev,
+    disability40Percent: value,
+    ph: value === 'No' ? 'No' : prev.ph,
+    disabilityType: value === 'Yes' ? prev.disabilityType : '',
+  }));
+
+  setErrors((prev) => ({
+    ...prev,
+    disability40Percent: undefined,
+    disabilityType: undefined,
+    ...(value === 'No' ? { ph: undefined } : {}),
+  }));
+};
 
   const handleGovEmployeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -2059,7 +2101,7 @@ export default function RegistrationForm() {
 
   const getMobileHint = (value: string): string | undefined => {
     if (!value) return undefined;
-    if (value.startsWith('0')  || value.startsWith('91')) {
+    if (value.startsWith('0')) {
       return "Do not prefix '0'  before the mobile no.";
     }
     if (!MOBILE_REGEX.test(value)) {
@@ -2085,20 +2127,46 @@ export default function RegistrationForm() {
     return undefined;
   };
 
-  const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      disability40Percent: value,
-      // Clear the disability type if they switch 40% to 'No'
-      disabilityType: value === 'Yes' ? prev.disabilityType : '', 
-    }));
-    setErrors((prev) => ({
-      ...prev,
-      disability40Percent: undefined,
-      disabilityType: undefined,
-    }));
-  };
+  // const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { value } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     disability40Percent: value,
+  //     // Clear the disability type if they switch 40% to 'No'
+  //     disabilityType: value === 'Yes' ? prev.disabilityType : '', 
+  //   }));
+  //   setErrors((prev) => ({
+  //     ...prev,
+  //     disability40Percent: undefined,
+  //     disabilityType: undefined,
+  //   }));
+  // };
+
+  // const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { value } = e.target;
+    
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     disability40Percent: value,
+  //     // NEW: Automatically set PH to 'No' if 40% disability is 'No'
+  //     ph: value === 'No' ? 'No' : prev.ph,
+  //     // Clear the disability type if they switch 40% to 'No'
+  //     disabilityType: value === 'Yes' ? prev.disabilityType : '', 
+  //   }));
+    
+  //   setErrors((prev) => {
+  //     const newErrors = {
+  //       ...prev,
+  //       disability40Percent: undefined,
+  //       disabilityType: undefined,
+  //     };
+  //     // NEW: Clear the PH error if we automatically updated it
+  //     if (value === 'No') {
+  //       newErrors.ph = undefined;
+  //     }
+  //     return newErrors;
+  //   });
+  // };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -2520,7 +2588,7 @@ export default function RegistrationForm() {
                         <option value="" disabled hidden>Please Select</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
-                        <option value="transgender">Transgender</option>
+                        <option value="other">other</option>
                       </select>
                       <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                     </div>
@@ -2539,8 +2607,8 @@ export default function RegistrationForm() {
                         className="w-full py-2.5 px-4 bg-white border border-outline-variant rounded-lg appearance-none focus:border-[#0076b6] focus:ring-2 focus:ring-[#0076b6]/20 transition-all font-body-md outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="" disabled hidden>Please Select</option>
-                        <option value="single">Married</option>
-                        <option value="married">Unmarried</option>
+                        <option value="married">Married</option>
+                        <option value="unmarried">Unmarried</option>
                         <option value="Divorced">Widow/Divorced women/women judicialy separated</option>
                       </select>
                       <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
@@ -2607,7 +2675,7 @@ export default function RegistrationForm() {
 
                   {/* Field 11: PH Toggle */}
                   <div>
-                    <p className="font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Physically Handicapped (PH)<RequiredMark /></p>
+                    <p className="font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Person with Disability(Pwd)<RequiredMark /></p>
                     <div className="flex gap-6 mt-3">
                       {['Yes', 'No'].map((opt) => (
                         <label key={`ph-${opt}`} className="flex items-center gap-2 cursor-pointer group">

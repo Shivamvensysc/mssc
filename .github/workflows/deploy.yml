@@ -60,6 +60,7 @@ jobs:
     needs: lint-and-test
     if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment: prod  # Access secrets stored in your 'prod' environment
 
     steps:
       - name: Checkout Code
@@ -73,26 +74,15 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
 
-      - name: Deploy Serverless Service
-        run: npx serverless deploy --stage dev
-        env:
-          DATABASE_URL: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}?sslmode=require
-          COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
-          COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
-          COGNITO_CLIENT_SECRET: ${{ secrets.COGNITO_CLIENT_SECRET }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          S3_BUCKET: ${{ secrets.S3_BUCKET }}
-          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
-          RAZORPAY_SECRET: ${{ secrets.RAZORPAY_SECRET }}
+    - name: Deploy to S3
+      run: aws s3 sync ./dist s3://mssc-fronted-dev-bucket --delete
 
-          MOCK_COGNITO: 'false'
-          MOCK_S3: 'false'
-          MOCK_PAYMENT: 'false'
-          MOCK_SMS_EMAIL: 'false'
+    - name: Invalidate CloudFront Cache
+      run: aws cloudfront create-invalidation --distribution-id ECYPVDYYY093P --paths "/*"

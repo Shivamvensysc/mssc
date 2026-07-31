@@ -569,11 +569,11 @@ export const registrationSchema = z
       message: "You must confirm residency eligibility",
     }),
 
-    gender: z.enum(["male", "female","transgender"], {
+    gender: z.enum(["male", "female","other"], {
       message: "Please select a gender",
     }),
 
-    maritalStatus: z.enum(["single", "married","Divorced"], {
+    maritalStatus: z.enum(["married", "unmarried","Divorced"], {
       message: "Please select a marital status",
     }),
 
@@ -609,11 +609,11 @@ export const registrationSchema = z
   .superRefine((data, ctx) => {
     // ---- Mobile number rules ----
     const mobile = data.mobile;
-    if (mobile.startsWith("0") || mobile.startsWith("+91") || mobile.startsWith("91")) {
+    if (mobile.startsWith("0")) {
       ctx.addIssue({
         path: ["mobile"],
         code: z.ZodIssueCode.custom,
-        message: "Do not prefix '0' or '+91' before the mobile no.",
+        message: "Do not prefix '0'  before the mobile no.",
       });
     } else if (!MOBILE_REGEX.test(mobile)) {
       ctx.addIssue({
