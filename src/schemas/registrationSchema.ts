@@ -609,11 +609,11 @@ export const registrationSchema = z
   .superRefine((data, ctx) => {
     // ---- Mobile number rules ----
     const mobile = data.mobile;
-    if (mobile.startsWith("0") || mobile.startsWith("+91") || mobile.startsWith("91")) {
+    if (mobile.startsWith("0") || mobile.startsWith("91")) {
       ctx.addIssue({
         path: ["mobile"],
         code: z.ZodIssueCode.custom,
-        message: "Do not prefix '0' or '+91' before the mobile no.",
+        message: "Do not prefix '0'  before the mobile no.",
       });
     } else if (!MOBILE_REGEX.test(mobile)) {
       ctx.addIssue({
