@@ -119,6 +119,7 @@ const personalInfoValidationSchema = z
     motherName: textOnlyField("Mother's name"),
     nationality: textOnlyField('Nationality'),
     reservationCategory: z.string().min(1, 'Reservation category is required'),
+    
     pwdStatus: z.string(),
     typeOfDisability: z
   .string()
@@ -127,6 +128,8 @@ const personalInfoValidationSchema = z
     is40Percent: z.string().optional().default('no'),
     stateGovEmployee: z.string(),
     sponsoredExchange: z.string(),
+    sponsorNo: z.string().optional().default(''),
+    isScribe: z.string().optional().default('no'),
     identificationMarks: z
       .string()
       .optional()
@@ -142,7 +145,55 @@ const personalInfoValidationSchema = z
         path: ['typeOfDisability'],
       });
     }
+
+    if (val.sponsoredExchange === 'yes' && !val.sponsorNo?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Sponsor Number is required',
+        path: ['sponsorNo'],
+      });
+    }
+
   });
+
+// const teacherEligibilityValidationSchema = z
+//   .object({
+//     tenPlusTwoTrack: z.string().min(1, '10+2 qualification track is required'),
+//     dedQual: z.string().min(1, 'D.Ed. / D.El.Ed. qualification is required'),
+//     dedInstitution: z
+//       .string()
+//       .trim()
+//       .min(1, 'D.Ed. / D.El.Ed. institute is required')
+//       .regex(TEXT_ONLY_REGEX, 'D.Ed. / D.El.Ed. institute must contain only letters, numbers are not allowed'),
+//     crossDisabilityPeriod: z
+//       .string()
+//       .optional()
+//       .default('')
+//       .refine((v) => !v || NUMERIC_ONLY_REGEX.test(v), 'Training period must contain only numbers, letters are not allowed'),
+//     rciNumber: z.string().optional().default(''),
+//     trainingNotAvailable: z.boolean(),
+//     tet1Passed: z.boolean(),
+//   })
+//   .superRefine((val, ctx) => {
+//     const hasPeriod = !!val.crossDisabilityPeriod?.trim();
+//     if (!val.trainingNotAvailable && !hasPeriod) {
+//       ctx.addIssue({
+//         code: z.ZodIssueCode.custom,
+//         message: 'Training period is required unless deferment is acknowledged',
+//         path: ['crossDisabilityPeriod'],
+//       });
+//     }
+//     if (hasPeriod) {
+//       const months = parseInt(val.crossDisabilityPeriod, 10);
+//       if (months < 6) {
+//         ctx.addIssue({
+//           code: z.ZodIssueCode.custom,
+//           message: 'Training period cannot be less than 6 months',
+//           path: ['crossDisabilityPeriod'],
+//         });
+//       }
+//     }
+//   });
 
 const teacherEligibilityValidationSchema = z
   .object({
@@ -164,13 +215,8 @@ const teacherEligibilityValidationSchema = z
   })
   .superRefine((val, ctx) => {
     const hasPeriod = !!val.crossDisabilityPeriod?.trim();
-    if (!val.trainingNotAvailable && !hasPeriod) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Training period is required unless deferment is acknowledged',
-        path: ['crossDisabilityPeriod'],
-      });
-    }
+    
+    // Check if the user entered a value, then enforce the 6-month minimum
     if (hasPeriod) {
       const months = parseInt(val.crossDisabilityPeriod, 10);
       if (months < 6) {
@@ -271,10 +317,12 @@ interface FormState {
     pwdStatus: string;
     typeOfDisability: string;
     is40Percent: string;
+    isScribe: string;
     stateGovEmployee: string;
     sponsoredExchange: string;
     identificationMarks: string;
     examCity: string;
+    sponsorNo: string;
   };
   address: {
     permanent: Address;
@@ -348,10 +396,12 @@ const initialState: FormState = {
     pwdStatus: 'no',
     typeOfDisability: '',
     is40Percent: 'no',
+    isScribe: 'no',
     stateGovEmployee: 'no',
     sponsoredExchange: 'no',
     identificationMarks: '',
     examCity: '',
+    sponsorNo: '',
   },
   address: {
     permanent: { ...emptyAddress },
@@ -424,6 +474,8 @@ const FIELD_LABELS: Record<string, string> = {
   tet1Passed: 'TET-1 Passed',
   examCity: 'Examination City',
   tet1Cert: 'TET-1 Certificate',
+  sponsorNo: 'Sponsor No. for Employment Exchange',
+  isScribe: 'Scribe Required',
 };
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -586,11 +638,17 @@ export default function MultiStepForm() {
               personalInfoUpdates.is40Percent = 'yes';
             }
 
+            if (pInfo.isScribe) personalInfoUpdates.isScribe = pInfo.isScribe; // <-- ADD THIS
+
               // CHANGE IT TO:
               if (pInfo.stateGovEmployee && step0.govEmployee === undefined) personalInfoUpdates.stateGovEmployee = pInfo.stateGovEmployee;
               if (pInfo.sponsoredExchange) personalInfoUpdates.sponsoredExchange = pInfo.sponsoredExchange;
+             if (pInfo.sponsorNo) personalInfoUpdates.sponsorNo = pInfo.sponsorNo;
+
               if (pInfo.identificationMarks) personalInfoUpdates.identificationMarks = pInfo.identificationMarks;
             }
+
+
             
             // Fill address from step1
             let addressUpdates: any = null;
@@ -986,7 +1044,7 @@ export default function MultiStepForm() {
       <SuccessModal
         data={successModal}
         onClose={() => {
-          window.location.href = '/';
+          window.location.href = '/application';
         }}
       />
       <div
@@ -1036,6 +1094,7 @@ export default function MultiStepForm() {
             data={formData} 
             uploadedDocuments={uploadedDocuments}
             isSubmitted={isSubmitted}
+            paymentData={paymentData}
           />}
         </div>
 
@@ -2368,6 +2427,18 @@ const isDisabled = (field: string) => {
                 required 
                 disabled={isDisabled('is40Percent')}
               />
+
+              {/* <-- ADD THIS NEW BLOCK --> */}
+              {data.personalInfo.typeOfDisability && data.personalInfo.is40Percent === 'yes' && (
+                <FormSelect 
+                  label="Do you need a Scribe?" 
+                  value={data.personalInfo.isScribe} 
+                  onChange={(e) => updateField('personalInfo', 'isScribe', e.target.value)} 
+                  options={yesNoOptions.map(y => ({ value: y, label: y }))}
+                  required 
+                  disabled={isDisabled('isScribe')}
+                />
+              )}
             </>
           )}
 
@@ -2378,6 +2449,17 @@ const isDisabled = (field: string) => {
             options={yesNoOptions.map(y => ({ value: y, label: y }))}
             required 
           />
+          {/* <-- ADD THIS CONDITIONAL RENDER --> */}
+  {data.personalInfo.sponsoredExchange === 'yes' && (
+    <FormField 
+      label="Sponsor No. for Employment Exchange" 
+      value={data.personalInfo.sponsorNo} 
+      onChange={(e) => updateField('personalInfo', 'sponsorNo', e.target.value)} 
+      required 
+      disabled={isDisabled('sponsorNo')}
+      error={errors?.personalInfo?.sponsorNo}
+    />
+  )}
           <FormField 
             label="Identification Marks" 
             value={data.personalInfo.identificationMarks} 
@@ -2564,32 +2646,32 @@ const isDisabled = (field: string) => {
           />
           <div className="flex flex-col gap-1.5">
             <FormField
-              label="Cross-disability Inclusive Education Training Period (Months)"
-              value={data.teacherEligibility.crossDisabilityPeriod}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, '');
-                // 1. Update the field (this also internally clears errors)
-                updateField('teacherEligibility', 'crossDisabilityPeriod', val);
-                
-                // 2. Real-time validation: check if less than 6
-                if (val !== '' && parseInt(val, 10) < 6) {
-                  // Use setTimeout to ensure this error sets AFTER updateField clears it
-                  setTimeout(() => {
-                    if (setErrors) {
-                      setErrors((prev) => ({
-                        ...prev,
-                        teacherEligibility: {
-                          ...prev.teacherEligibility,
-                          crossDisabilityPeriod: 'Training period cannot be less than 6 months',
-                        },
-                      }));
-                    }
-                  }, 0);
-                }
-              }}
-              required={!data.teacherEligibility.trainingNotAvailable}
-              error={errors?.teacherEligibility?.crossDisabilityPeriod}
-            />
+  label="Cross-disability Inclusive Education Training Period (Months)"
+  value={data.teacherEligibility.crossDisabilityPeriod}
+  onChange={(e) => {
+    const val = e.target.value.replace(/\D/g, '');
+    // 1. Update the field (this also internally clears errors)
+    updateField('teacherEligibility', 'crossDisabilityPeriod', val);
+    
+    // 2. Real-time validation: check if less than 6 (only if a value exists)
+    if (val !== '' && parseInt(val, 10) < 6) {
+      // Use setTimeout to ensure this error sets AFTER updateField clears it
+      setTimeout(() => {
+        if (setErrors) {
+          setErrors((prev) => ({
+            ...prev,
+            teacherEligibility: {
+              ...prev.teacherEligibility,
+              crossDisabilityPeriod: 'Training period cannot be less than 6 months',
+            },
+          }));
+        }
+      }, 0);
+    }
+  }}
+  /* The required prop has been completely removed to make it optional */
+  error={errors?.teacherEligibility?.crossDisabilityPeriod}
+/>
             <span className="text-xs" style={{ color: theme.textMuted }}>
               Minimum 6 months required unless deferment acknowledgement is selected.
             </span>
@@ -3074,11 +3156,13 @@ function Step3Payment({
 function Step4Review({ 
   data, 
   uploadedDocuments = {},
-  isSubmitted = false
+  isSubmitted = false,
+  paymentData
 }: { 
   data: FormState;
   uploadedDocuments?: Record<string, string>;
   isSubmitted?: boolean;
+  paymentData?: any;
 }) {
   const InfoGrid = ({ obj }: { obj: Record<string, any> }) => (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -3120,8 +3204,35 @@ function Step4Review({
         Review & Submit
       </h2>
 
-      <FormSection number={1} title="Personal Details">
+      {/* <FormSection number={1} title="Personal Details">
         <InfoGrid obj={data.personalInfo} />
+      </FormSection> */}
+
+      {/* <FormSection number={1} title="Personal Details">
+    <InfoGrid obj={
+      data.personalInfo.sponsoredExchange === 'yes' 
+        ? data.personalInfo 
+        : Object.fromEntries(Object.entries(data.personalInfo).filter(([k]) => k !== 'sponsorNo'))
+    } />
+  </FormSection> */}
+
+  <FormSection number={1} title="Personal Details">
+        <InfoGrid obj={
+          Object.fromEntries(
+            Object.entries(data.personalInfo).filter(([k]) => {
+              // Hide sponsorNo if not sponsored
+              if (k === 'sponsorNo' && data.personalInfo.sponsoredExchange !== 'yes') return false;
+              
+              // Hide isScribe if PwD is no, or disability is under 40%
+              if (k === 'isScribe' && !(data.personalInfo.pwdStatus === 'yes' && data.personalInfo.is40Percent === 'yes')) return false;
+              
+              // Hide 40Percent and typeOfDisability if PwD is no (optional cleanup)
+              if ((k === 'is40Percent' || k === 'typeOfDisability') && data.personalInfo.pwdStatus !== 'yes') return false;
+
+              return true;
+            })
+          )
+        } />
       </FormSection>
 
       <FormSection number={2} title="Permanent Address">
@@ -3255,6 +3366,22 @@ function Step4Review({
         </div>
       </FormSection>
 
+      
+{/* ADD THIS NEW PAYMENT SECTION */}
+      {paymentData && (
+        <FormSection number={6} title="Payment Details">
+          <InfoGrid obj={{
+            transactionId: paymentData.transactionId || 'N/A',
+            paymentMode: paymentData.paymentMode ? paymentData.paymentMode.toUpperCase() : 'N/A',
+            amount: `${paymentData.currency || 'INR'} ${paymentData.amount || '0.00'}`,
+            status: paymentData.status ? paymentData.status.toUpperCase() : 'N/A',
+            date: paymentData.createdAt ? new Date(paymentData.createdAt).toLocaleDateString() : 'N/A'
+          }} />
+        </FormSection>
+      )}
+
+      
+      
       
       <div
         className="flex gap-3 items-start p-4 rounded-lg text-sm"

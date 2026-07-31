@@ -2588,7 +2588,7 @@ const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>)
                         <option value="" disabled hidden>Please Select</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
-                        <option value="other">other</option>
+                        <option value="other">Other</option>
                       </select>
                       <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                     </div>
