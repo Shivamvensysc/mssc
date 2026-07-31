@@ -2675,7 +2675,7 @@ const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>)
 
                   {/* Field 11: PH Toggle */}
                   <div>
-                    <p className="font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Physically Handicapped (PH)<RequiredMark /></p>
+                    <p className="font-label-md text-[14px] font-semibold text-on-surface-variant mb-2">Person with Disability(Pwd)<RequiredMark /></p>
                     <div className="flex gap-6 mt-3">
                       {['Yes', 'No'].map((opt) => (
                         <label key={`ph-${opt}`} className="flex items-center gap-2 cursor-pointer group">
