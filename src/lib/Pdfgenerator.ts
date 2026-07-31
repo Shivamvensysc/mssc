@@ -659,7 +659,6 @@ async function drawPhotoPanel(
   const boxH = boxHeight;
   const gap = PHOTO_GAP;
   const items: Array<{ caption: string[]; url: string | null }> = [
-    { caption: ["LIVE", "PHOTO"], url: data.photograph },
     { caption: ["PHOTOGRAPH"], url: data.photograph },
     { caption: ["SIGNATURE"], url: data.signature },
   ];

@@ -6264,7 +6264,7 @@ function Step4Review({
         </div>
       </FormSection>
 
-      <FormSection number={5} title="Documents">
+      {/* <FormSection number={5} title="Documents">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {Object.entries(data.documents).map(([key, val]) => {
             if (key === 'reservationCert' && (data.personalInfo.reservationCategory === 'General' || data.personalInfo.reservationCategory === 'Other')) return null;
@@ -6299,6 +6299,51 @@ function Step4Review({
               </div>
             );
           })}
+        </div>
+      </FormSection> */}
+
+      <FormSection number={5} title="Documents">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {(() => {
+            // 1. Combine standard documents AND teacher eligibility documents
+            const allReviewDocs = {
+              ...data.documents,
+              tet1Cert: data.teacherEligibility.tet1Cert,
+              dedCert: data.teacherEligibility.dedCert,
+              tenPlusTwoCert: data.teacherEligibility.tenPlusTwoCert
+            };
+
+            return Object.entries(allReviewDocs).map(([key, val]) => {
+              // 2. Conditionally skip documents that do not apply
+              if (key === 'reservationCert' && ['General', 'Other', 'UR'].includes(data.personalInfo.reservationCategory)) return null;
+              if (key === 'nocCert' && data.personalInfo.stateGovEmployee !== 'yes') return null;
+              if (key === 'pwdCert' && data.personalInfo.pwdStatus !== 'yes') return null;
+              
+              const isUploaded = isDocumentUploaded(key, val as File | null);
+              
+              // 3. THE FIX: If it is null/not uploaded (and optional), do not render it at all
+              if (!isUploaded) return null;
+
+              const displayName = getDocumentDisplayName(key, val as File | null);
+
+              return (
+                <div key={key} className="flex flex-col">
+                  <span className="text-xs font-bold mb-1" style={{ color: theme.textPrimary }}>
+                    {labelFor(key)}
+                  </span>
+                  <span
+                    className="text-sm font-medium flex items-center gap-1"
+                    style={{ color: theme.success }}
+                  >
+                    <CheckCircle size={13} /> 
+                    <span className="truncate max-w-[150px]" title={displayName || undefined}>
+                      {displayName || 'Uploaded'}
+                    </span>
+                  </span>
+                </div>
+              );
+            });
+          })()}
         </div>
       </FormSection>
 
