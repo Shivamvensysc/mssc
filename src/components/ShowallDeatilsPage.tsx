@@ -138,6 +138,11 @@ const DOC_LABELS: Record<string, string> = {
   reservationCert: 'Reservation Certificate',
   pwdCert: 'PWD Certificate',
   tenPlusTwoCert: '10+2 / Equivalent Certificate',
+  '10thmarksheet': '10th Marksheet',
+  '12thmarksheet': '12th Marksheet',
+  graduationMarksheet: 'Graduation Marksheet',
+  tet1Cert: 'TET 1 Certificate',
+  dedCert: 'D.Ed Certificate',
 };
 
 const EXPERIENCE_CERT_PREFIX = 'experienceCert_';
@@ -356,10 +361,12 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
   const isExperienceArray = Array.isArray(rawExperience);
   const hasExperience = isExperienceArray ? rawExperience.length > 0 : Boolean((rawExperience as any)?.hasExperience);
 
-  const knownDocKeys = Object.keys(DOC_LABELS).filter((k) => k in step2);
+  // const knownDocKeys = Object.keys(DOC_LABELS).filter((k) => k in step2);
+  
+  const knownDocKeys = Object.keys(DOC_LABELS).filter((k) => k in step2 && step2[k] !== null);
   const experienceCertKeys = Object.keys(step2)
-    .filter((k) => k.startsWith(EXPERIENCE_CERT_PREFIX))
-    .sort();
+  .filter((k) => k.startsWith(EXPERIENCE_CERT_PREFIX) && step2[k] !== null)
+  .sort();
 
   const referenceNumber = applicationData?.applicationReferenceNumber || '—';
   const isFinal = applicationData?.status === 'submitted' && applicationData?.isSubmitted === true;
