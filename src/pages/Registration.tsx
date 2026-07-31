@@ -2003,25 +2003,67 @@ export default function RegistrationForm() {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  const handlePhChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      ph: value,
-      disabilityType: value === 'Yes' ? prev.disabilityType : '',
-      disability40Percent: value === 'Yes' ? prev.disability40Percent : '',
-    }));
-    setErrors((prev) => ({
-      ...prev,
-      ph: undefined,
-      disabilityType: undefined,
-      disability40Percent: undefined,
-    }));
+  // const handlePhChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { value } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     ph: value,
+  //     disabilityType: value === 'Yes' ? prev.disabilityType : '',
+  //     disability40Percent: value === 'Yes' ? prev.disability40Percent : '',
+  //   }));
+  //   setErrors((prev) => ({
+  //     ...prev,
+  //     ph: undefined,
+  //     disabilityType: undefined,
+  //     disability40Percent: undefined,
+  //   }));
 
-    if (value === 'Yes') {
-      fetchDisabilities();
-    }
-  };
+  //   if (value === 'Yes') {
+  //     fetchDisabilities();
+  //   }
+  // };
+
+  // 1. Resets sub-fields whenever PH toggle changes
+const handlePhChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { value } = e.target;
+
+  setFormData((prev) => ({
+    ...prev,
+    ph: value,
+    disability40Percent: '', // Always reset when switching PH status
+    disabilityType: '',
+  }));
+
+  setErrors((prev) => ({
+    ...prev,
+    ph: undefined,
+    disabilityType: undefined,
+    disability40Percent: undefined,
+  }));
+
+  if (value === 'Yes') {
+    fetchDisabilities();
+  }
+};
+
+// 2. Automatically sets PH = 'No' if 40% disability = 'No'
+const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { value } = e.target;
+
+  setFormData((prev) => ({
+    ...prev,
+    disability40Percent: value,
+    ph: value === 'No' ? 'No' : prev.ph,
+    disabilityType: value === 'Yes' ? prev.disabilityType : '',
+  }));
+
+  setErrors((prev) => ({
+    ...prev,
+    disability40Percent: undefined,
+    disabilityType: undefined,
+    ...(value === 'No' ? { ph: undefined } : {}),
+  }));
+};
 
   const handleGovEmployeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -2100,32 +2142,32 @@ export default function RegistrationForm() {
   //   }));
   // };
 
-  const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
+  // const handleDisability40PercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { value } = e.target;
     
-    setFormData((prev) => ({
-      ...prev,
-      disability40Percent: value,
-      // NEW: Automatically set PH to 'No' if 40% disability is 'No'
-      ph: value === 'No' ? 'No' : prev.ph,
-      // Clear the disability type if they switch 40% to 'No'
-      disabilityType: value === 'Yes' ? prev.disabilityType : '', 
-    }));
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     disability40Percent: value,
+  //     // NEW: Automatically set PH to 'No' if 40% disability is 'No'
+  //     ph: value === 'No' ? 'No' : prev.ph,
+  //     // Clear the disability type if they switch 40% to 'No'
+  //     disabilityType: value === 'Yes' ? prev.disabilityType : '', 
+  //   }));
     
-    setErrors((prev) => {
-      const newErrors = {
-        ...prev,
-        disability40Percent: undefined,
-        disabilityType: undefined,
-      };
-      // NEW: Clear the PH error if we automatically updated it
-      if (value === 'No') {
-        newErrors.ph = undefined;
-      }
-      return newErrors;
-    });
-  };
-  
+  //   setErrors((prev) => {
+  //     const newErrors = {
+  //       ...prev,
+  //       disability40Percent: undefined,
+  //       disabilityType: undefined,
+  //     };
+  //     // NEW: Clear the PH error if we automatically updated it
+  //     if (value === 'No') {
+  //       newErrors.ph = undefined;
+  //     }
+  //     return newErrors;
+  //   });
+  // };
+
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, email: value }));
