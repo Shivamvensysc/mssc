@@ -1114,7 +1114,7 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
   };
 
   return (
-    <div className="min-h-screen py-10 px-4" style={{ backgroundColor: theme.bg }}>
+    <div className="min-h-screen  px-4" style={{ backgroundColor: theme.bg }}>
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -1124,7 +1124,7 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
         }
       `}</style>
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* ============ HERO / STATUS BANNER ============ */}
         <div
           className="print-sheet rounded-2xl overflow-hidden mb-6"
@@ -1140,9 +1140,8 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
                   <CheckCircle2 size={28} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold tracking-[0.18em] uppercase" style={{ color: theme.goldLight }}>
-                    Teacher Recruitment Portal
-                  </p>
+                 
+                 
                   <h1 className="text-2xl font-bold text-white mt-1">
                     {isFinal ? 'Application Submitted' : 'Application Summary'}
                   </h1>
@@ -1441,19 +1440,6 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
             </p>
           </div>
         )}
-
-        <div className="no-print flex justify-center pb-4 mt-6">
-          <button
-            type="button"
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm disabled:opacity-70"
-            style={{ backgroundColor: theme.navy, color: '#fff' }}
-          >
-            {isDownloading ? <Printer size={16} className="animate-pulse" /> : <Download size={16} />}
-            Download Application
-          </button>
-        </div>
       </div>
     </div>
   );

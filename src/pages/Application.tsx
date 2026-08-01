@@ -3,7 +3,6 @@ import axios from 'axios';
 import { z } from 'zod';
 import { getCategories,  getDisabilities } from '../api/registrationApi';
 import { useFaceLiveness } from '../hooks/useFaceLiveness';
-import ShowallDeatilsPage from '../components/ShowallDeatilsPage';
 import { 
   Plus, Trash2, FileText, CreditCard, CheckCircle, Upload, Loader2, X, 
   AlertCircle, Calendar, Mail, Phone, CloudUpload, File as FileIcon, Eye,
@@ -480,6 +479,7 @@ const FIELD_LABELS: Record<string, string> = {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL
 import api from '../api/interceptor'
+import { useNavigate } from 'react-router-dom';
 
 const labelFor = (key: string) =>
   FIELD_LABELS[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
@@ -513,6 +513,7 @@ const apiService = {
 };
 
 export default function MultiStepForm() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormState>(initialState);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -527,8 +528,7 @@ export default function MultiStepForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [documentErrors, setDocumentErrors] = useState<Record<string, boolean>>({});
-  const [showFinalDetailsPage, setShowFinalDetailsPage] = useState(false);
-  const [rawApplicationData, setRawApplicationData] = useState<any>(null);
+  
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
@@ -563,10 +563,8 @@ export default function MultiStepForm() {
           setIsSubmitted(data.isSubmitted || false);
           
           if (data.status === 'submitted' && data.isSubmitted === true) {
-            setRawApplicationData(data);
-            setShowFinalDetailsPage(true);
-            setIsDataFetched(true);
-            return;
+            navigate('/candidate', { replace: true });
+             return;
           }
 
           // Check if we have step data
@@ -1031,30 +1029,27 @@ export default function MultiStepForm() {
     );
   }
 
-  if (showFinalDetailsPage) {
-    return <ShowallDeatilsPage applicationData={rawApplicationData} />;
-  }
+  
 
   return (
     <div
-      className="min-h-screen py-10 px-4"
+      className="min-h-screen  px-4"
       style={{ backgroundColor: theme.bg, ['--navy' as any]: theme.navy, ['--gold' as any]: theme.gold }}
     >
       <Toast toast={toast} onDismiss={() => setToast(null)} />
       <SuccessModal
         data={successModal}
         onClose={() => {
-          window.location.href = '/application';
+          window.location.href = '/candidate/application';
         }}
       />
       <div
-        className="max-w-6xl mx-auto rounded-2xl overflow-hidden"
+        className="max-w-7xl mx-auto rounded-2xl overflow-hidden"
         style={{ backgroundColor: theme.surface, boxShadow: '0 1px 2px rgba(20,30,50,0.04), 0 12px 32px -12px rgba(20,30,50,0.12)' }}
       >
         <div className="px-8 pt-8 pb-6" style={{ backgroundColor: theme.navy }}>
-          <p className="text-xs font-semibold tracking-[0.18em] uppercase" style={{ color: theme.goldLight }}>
-            Teacher Recruitment Portal
-          </p>
+          
+          
           <h1 className="text-2xl font-bold text-white mt-1">Candidate Application</h1>
         </div>
 
