@@ -121,9 +121,8 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile, isSubmit
       >
         {/* Brand */}
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0076b6] font-mono text-sm font-semibold">
-            CP
-          </div>
+          
+          
           <span
             className={`whitespace-nowrap font-display text-[16.5px] font-semibold transition-opacity ${
               collapsed ? "md:hidden" : ""

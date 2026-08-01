@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
-  userData?: { name: string; email: string }; 
+  userData?: { name: string; email: string ; photoUrl?: string }; 
 }
 
-export default function Header({ onToggleSidebar, userData = { name: "Candidate", email: "" } }: HeaderProps) {
+export default function Header({ onToggleSidebar, userData = { name: "Candidate", email: "",photoUrl: "" } }: HeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -72,9 +72,18 @@ export default function Header({ onToggleSidebar, userData = { name: "Candidate"
       <div className="ml-auto flex items-center gap-2.5 relative" ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0076b6] font-mono text-xs font-semibold text-white transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#0076b6] focus:ring-offset-2"
+          className="flex h-9 w-9 overflow-hidden items-center justify-center rounded-full bg-[#0076b6] font-mono text-xs font-semibold text-white transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#0076b6] focus:ring-offset-2 border border-slate-200"
         >
-          {initials}
+          {/* <-- CHANGED: Conditional rendering for Image vs Initials */}
+          {userData.photoUrl ? (
+            <img 
+              src={userData.photoUrl} 
+              alt="Profile" 
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            initials
+          )}
         </button>
 
         {/* Dropdown Menu */}
