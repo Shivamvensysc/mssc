@@ -459,12 +459,18 @@ export default function UserDetails() {
         <div className="px-6 sm:px-10 pb-8 relative">
           <div className="flex flex-col sm:flex-row sm:items-end gap-6 -mt-16 sm:-mt-12 mb-6">
             <div className="relative">
-              <img 
-                src={docs.photo ? `${BASE_URL}/files/${docs.photo}` : "https://via.placeholder.com/150"} 
-                alt="Candidate" 
-                className="w-32 h-32 rounded-2xl border-4 border-white bg-slate-100 object-cover shadow-md"
-                onError={(e) => (e.currentTarget.src = "https://via.placeholder.com/150?text=No+Image")}
-              />
+            <img 
+  src={docs.photo ? `${BASE_URL}/files/${docs.photo}` : "https://via.placeholder.com/150"} 
+  alt="Candidate" 
+  className="w-32 h-32 rounded-2xl border-4 border-white bg-slate-100 object-cover shadow-md"
+  onError={(e) => {
+    const fallbackSrc = "https://via.placeholder.com/150?text=No+Image";
+    // Only update the src if it hasn't already been set to the fallback
+    if (e.currentTarget.src !== fallbackSrc) {
+      e.currentTarget.src = fallbackSrc;
+    }
+  }}
+/>
             </div>
             <div className="pb-2 w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
