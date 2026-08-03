@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -22,7 +22,7 @@ export default function Dashboard() {
 
   // Pagination state
   const [pageNo, setPageNo] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const pageSize = 20; // Hardcoded to exactly 20 data records per page
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -76,7 +76,7 @@ export default function Dashboard() {
     };
 
     fetchDashboardData();
-  }, [pageNo, pageSize]);
+  }, [pageNo]); // pageSize removed from dependencies as it is constant
 
   const handleRowClick = (candidateId: string) => {
     navigate(`candidate/${candidateId}`);
@@ -86,6 +86,20 @@ export default function Dashboard() {
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   const startRecord = (pageNo - 1) * pageSize + 1;
   const endRecord = Math.min(pageNo * pageSize, totalRecords);
+
+  // Generate page numbers to display (e.g., 1 2 3 ... 8)
+  const pageNumbers = useMemo(() => {
+    const nums: (number | "...")[] = [];
+    const windowSize = 1; // How many pages to show around the current page
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - pageNo) <= windowSize) {
+        nums.push(i);
+      } else if (nums[nums.length - 1] !== "...") {
+        nums.push("...");
+      }
+    }
+    return nums;
+  }, [pageNo, totalPages]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6">
@@ -207,22 +221,9 @@ export default function Dashboard() {
               <span>
                 Showing <span className="font-medium text-slate-700">{startRecord}</span> to <span className="font-medium text-slate-700">{endRecord}</span> of <span className="font-medium text-slate-700">{totalRecords}</span>
               </span>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setPageNo(1);
-                }}
-                className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0076b6]"
-              >
-                <option value={10}>10 / page</option>
-                <option value={20}>20 / page</option>
-                <option value={50}>50 / page</option>
-                <option value={100}>100 / page</option>
-              </select>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={pageNo === 1}
@@ -231,6 +232,31 @@ export default function Dashboard() {
               >
                 Previous
               </button>
+
+              {/* Dynamic Page Numbers */}
+              <div className="flex items-center gap-1 hidden sm:flex">
+                {pageNumbers.map((p, i) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${i}`} className="px-2 text-slate-400">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPageNo(p as number)}
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                        p === pageNo
+                          ? "bg-[#0076b6] text-white"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+              </div>
+
               <button
                 type="button"
                 disabled={pageNo >= totalPages}
