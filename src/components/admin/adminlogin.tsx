@@ -222,7 +222,7 @@ export default function AdminLoginPage() {
             Administrative Login
           </h2>
           <p className="text-[12.5px] font-medium text-[#5F6368] leading-relaxed max-w-[340px] mx-auto">
-            Access restricted to authorized JSSC Officers and Administrative Personnel.
+            Access restricted to authorized BSSC Officers and Administrative Personnel.
           </p>
         </div>
 
