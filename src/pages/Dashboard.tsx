@@ -36,7 +36,7 @@ export default function Dashboard() {
 
         const [statsRes, candidatesRes] = await Promise.all([
           fetch(`${BASE_URL}/admin/stats`, { headers }),
-          fetch(`${BASE_URL}/admin/candidates?pageNo=${pageNo}&pageSize=${pageSize}`, { headers })
+          fetch(`${BASE_URL}/admin/candidates?page=${pageNo}&limit=${pageSize}`, { headers })
         ]);
 
         const statsData = await statsRes.json();
@@ -105,7 +105,7 @@ export default function Dashboard() {
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6">
       
       {/* 4 CARDS SECTION */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
         <StatCard 
           title="Total Registered Applications" 
           value={stats?.applications?.total || 0} 
@@ -300,7 +300,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border ${baseClass}`}>
-      {status || "Unknown"}
+      {status?.toUpperCase() || "UNKNOWN"}
     </span>
   );
 }

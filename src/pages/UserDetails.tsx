@@ -95,7 +95,7 @@ export default function UserDetails() {
           </button>
           <div>
             <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Candidate Data</h2>
-            <p className="text-sm text-slate-500 font-medium mt-0.5">Ref: {appData.finalSubmission.applicationId}</p>
+            {/* <p className="text-sm text-slate-500 font-medium mt-0.5">Ref: {appData.finalSubmission.applicationId}</p> */}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export default function UserDetails() {
           {/* Application Status Card */}
           <SectionCard title="Application Info" icon={<Info className="w-5 h-5 text-[#0076b6]"/>}>
             <div className="space-y-4">
-              <DetailRow label="Candidate ID" value={appData.id} copyable />
+              {/* <DetailRow label="Candidate ID" value={appData.id} copyable /> */}
               <DetailRow label="Submitted On" value={formatDate(appData.createdAt)} />
               <div className="pt-4 border-t border-slate-100">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Payment Details</h4>
