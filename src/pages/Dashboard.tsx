@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ReusableTable, type Column } from "../components/ReusableTable"; // Verify your file path
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Define the shape of our flattened candidate data for the table
 export interface TableCandidate {
   id: string;
   name: string;
@@ -18,39 +16,27 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [candidates, setCandidates] = useState<TableCandidate[]>([]);
   const [stats, setStats] = useState<any>(null);
+  
+  const [totalRecords, setTotalRecords] = useState(0); 
   const [isLoading, setIsLoading] = useState(true);
 
-  // Reusable Table Columns
-  const columns: Column<TableCandidate>[] = [
-    { key: "name", title: "Candidate Name", type: "text", sortable: true },
-    { key: "email", title: "Email", type: "text", sortable: true },
-    { key: "applicationNumber", title: "Application Number", type: "text", sortable: true },
-    { key: "phone", title: "Phone Number", type: "phone", sortable: false },
-    { key: "status", title: "Status", type: "status", sortable: true },
-  ];
-
-  const customTheme = {
-    accentColor: "#0076b6",
-    headerBackground: "#f0f7fb",
-    headerColor: "#0076b6",
-    borderColor: "#e2e8f0",
-  };
+  // Pagination state
+  const [pageNo, setPageNo] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        // Using idToken as stored in your AdminLoginPage
         const token = localStorage.getItem("adminIdToken") || localStorage.getItem("adminAccessToken");
         const headers = { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}` 
         };
 
-        // Fetch stats and candidates in parallel
         const [statsRes, candidatesRes] = await Promise.all([
           fetch(`${BASE_URL}/admin/stats`, { headers }),
-          fetch(`${BASE_URL}/admin/candidates`, { headers })
+          fetch(`${BASE_URL}/admin/candidates?pageNo=${pageNo}&pageSize=${pageSize}`, { headers })
         ]);
 
         const statsData = await statsRes.json();
@@ -61,8 +47,11 @@ export default function Dashboard() {
         }
 
         if (candidatesData.success) {
-          // Flatten the nested API data into a simple object for the ReusableTable
-          const formattedCandidates = candidatesData.data.map((c: any) => ({
+          const rawCandidates = Array.isArray(candidatesData.data)
+            ? candidatesData.data
+            : candidatesData.data?.candidates || candidatesData.data?.items || candidatesData.data?.rows || [];
+
+          const formattedCandidates = rawCandidates.map((c: any) => ({
             id: c.id,
             name: c.user?.fullName || "N/A",
             email: c.user?.email || "N/A",
@@ -70,7 +59,14 @@ export default function Dashboard() {
             phone: c.mobileNumber || "N/A",
             status: c.application?.status || "N/A"
           }));
+          
           setCandidates(formattedCandidates);
+          
+          if (candidatesData.pagination?.total) {
+            setTotalRecords(candidatesData.pagination.total);
+          } else if (statsData.data?.applications?.total) {
+            setTotalRecords(statsData.data.applications.total);
+          }
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -80,18 +76,20 @@ export default function Dashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [pageNo, pageSize]);
 
-  const handleRowClick = (candidate: TableCandidate) => {
-    navigate(`candidate/${candidate.id}`);
+  const handleRowClick = (candidateId: string) => {
+    navigate(`candidate/${candidateId}`);
   };
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading dashboard data...</div>;
-  }
+  // Helper for pagination math
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const startRecord = (pageNo - 1) * pageSize + 1;
+  const endRecord = Math.min(pageNo * pageSize, totalRecords);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6">
+      
       {/* 4 CARDS SECTION */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard 
@@ -116,23 +114,142 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* TABLE SECTION */}
-      <div className="shadow-sm rounded-2xl bg-white border border-slate-200">
-        <ReusableTable<TableCandidate>
-          title="Candidate Data for File"
-          subtitle="Click on any candidate row to view full details."
-          data={candidates}
-          columns={columns}
-          rowKey="id"
-          onRowClick={handleRowClick}
-          theme={customTheme}
-          toolbar={{ search: true, filter: true, export: true }}
-          pagination={{ pageSize: 10 }}
-        />
+      {/* DYNAMIC EXAM CITY STATS SECTION */}
+      {stats?.examCityStats && stats.examCityStats.length > 0 && (
+        <div className="space-y-4 pt-2">
+          <h2 className="text-lg font-semibold text-slate-700">Exam Center Statistics</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {stats.examCityStats.map((cityStat: any, index: number) => {
+              const displayTitle = (!cityStat.examCity || cityStat.examCity === "Not Selected") 
+                ? "No center selected" 
+                : cityStat.examCity;
+                
+              return (
+                <StatCard 
+                  key={index}
+                  title={displayTitle}
+                  value={cityStat.count}
+                  color="border-l-indigo-400"
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* SIMPLE TABLE SECTION */}
+      <div className="shadow-sm rounded-2xl bg-white border border-slate-200 overflow-hidden">
+        {/* Table Header Area */}
+        <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-base font-semibold text-slate-800">Candidate Data</h3>
+            <p className="mt-0.5 text-sm text-slate-500">Click on any candidate row to view full details.</p>
+          </div>
+        </div>
+
+        {/* Responsive Table Wrapper */}
+        <div className="w-full overflow-x-auto">
+          <table className="w-full min-w-[800px] text-left border-collapse">
+            <thead className="bg-[#f0f7fb] text-[#0076b6]">
+              <tr>
+                <th className="px-5 py-4 font-semibold text-sm uppercase tracking-wider">Candidate Name</th>
+                <th className="px-5 py-4 font-semibold text-sm uppercase tracking-wider">Email</th>
+                <th className="px-5 py-4 font-semibold text-sm uppercase tracking-wider">Application Number</th>
+                <th className="px-5 py-4 font-semibold text-sm uppercase tracking-wider">Phone Number</th>
+                <th className="px-5 py-4 font-semibold text-sm uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {isLoading ? (
+                // Smooth Skeleton Loader
+                Array.from({ length: Math.min(pageSize, 6) }).map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    {Array.from({ length: 5 }).map((_, colIndex) => (
+                      <td key={colIndex} className="px-5 py-4">
+                        <div className="h-4 bg-slate-200 rounded w-3/4 animate-pulse"></div>
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : candidates.length === 0 ? (
+                // Empty State
+                <tr>
+                  <td colSpan={5} className="px-5 py-12 text-center text-slate-500">
+                    No candidates found.
+                  </td>
+                </tr>
+              ) : (
+                // Data Rows
+                candidates.map((candidate) => (
+                  <tr 
+                    key={candidate.id}
+                    onClick={() => handleRowClick(candidate.id)}
+                    className="hover:bg-slate-50 cursor-pointer transition-colors"
+                  >
+                    <td className="px-5 py-4 text-sm text-slate-800 font-medium">{candidate.name}</td>
+                    <td className="px-5 py-4 text-sm text-slate-600">{candidate.email}</td>
+                    <td className="px-5 py-4 text-sm text-slate-600">{candidate.applicationNumber}</td>
+                    <td className="px-5 py-4 text-sm text-slate-600">{candidate.phone}</td>
+                    <td className="px-5 py-4 text-sm">
+                      <StatusBadge status={candidate.status} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Custom Pagination Footer */}
+        {!isLoading && totalRecords > 0 && (
+          <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
+            <div className="flex items-center gap-3 text-sm text-slate-500">
+              <span>
+                Showing <span className="font-medium text-slate-700">{startRecord}</span> to <span className="font-medium text-slate-700">{endRecord}</span> of <span className="font-medium text-slate-700">{totalRecords}</span>
+              </span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPageNo(1);
+                }}
+                className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0076b6]"
+              >
+                <option value={10}>10 / page</option>
+                <option value={20}>20 / page</option>
+                <option value={50}>50 / page</option>
+                <option value={100}>100 / page</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pageNo === 1}
+                onClick={() => setPageNo((prev) => Math.max(1, prev - 1))}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={pageNo >= totalPages}
+                onClick={() => setPageNo((prev) => Math.min(totalPages, prev + 1))}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Helper Components
+// ---------------------------------------------------------------------------
 
 function StatCard({ title, value, color }: { title: string; value: number | string; color: string }) {
   return (
@@ -140,5 +257,24 @@ function StatCard({ title, value, color }: { title: string; value: number | stri
       <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
       <h3 className="text-3xl font-bold text-slate-800">{value}</h3>
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const s = status?.toLowerCase() || "";
+  let baseClass = "bg-slate-100 text-slate-600 border-slate-200";
+
+  if (s === "submitted" || s === "success" || s === "approved") {
+    baseClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+  } else if (s === "draft" || s === "pending" || s === "review") {
+    baseClass = "bg-amber-50 text-amber-700 border-amber-200";
+  } else if (s === "failed" || s === "rejected" || s === "error") {
+    baseClass = "bg-rose-50 text-rose-700 border-rose-200";
+  }
+
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border ${baseClass}`}>
+      {status || "Unknown"}
+    </span>
   );
 }
