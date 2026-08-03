@@ -282,7 +282,8 @@ export function LoginPage() {
         }
         
         // Redirect upon successful authentication
-        navigate('/application'); 
+        // navigate('/application'); 
+        navigate("/candidate/application")
       } else if (result.status === "NEW_PASSWORD_REQUIRED") {
         setLoginError("Your account requires a new password setup. Please contact support.");
       }
