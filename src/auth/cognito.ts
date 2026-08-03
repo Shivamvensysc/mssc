@@ -1573,6 +1573,50 @@ const friendlyCognitoMessage = (err: unknown, fallback: string): string => {
  * Registers the candidate in Cognito (signUp) and triggers the email OTP.
  * Uses the password provided directly from the form.
  */
+// export const sendOtp = async (data: any, password?: string): Promise<SendOtpResponse> => {
+//   return new Promise((resolve, reject) => {
+//     const attributeList = buildAttributeList(data);
+//     const finalPassword = password || (Math.random().toString(36).slice(-16) + "@Temp123");
+
+//     userPool.signUp(data.email, finalPassword, attributeList, [], (err, result) => {
+//       if (err) {
+//         if (
+//           err.name === "InvalidParameterException" &&
+//           /could not be determined/i.test(err.message || "")
+//         ) {
+//           const missing = REQUIRED_CUSTOM_ATTRIBUTES.find((a) =>
+//             (err.message || "").includes(a)
+//           );
+//           reject(
+//             new SchemaMisconfiguredError(
+//               missing
+//                 ? `The Cognito User Pool is missing the custom attribute "${missing}". Add it in the AWS Console (Sign-up experience → Custom attributes) as String/Mutable, then try again.`
+//                 : "The Cognito User Pool schema is missing one or more custom attributes this form sends. Check Sign-up experience → Custom attributes in the AWS Console."
+//             )
+//           );
+//           return;
+//         }
+//         if (err.name === "UsernameExistsException") {
+//           reject(new Error("An account with this email already exists. Please log in instead."));
+//           return;
+//         }
+//         reject(new Error(friendlyCognitoMessage(err, "Something went wrong while registering. Please try again.")));
+//         return;
+//       }
+//       if (!result) {
+//         reject(new Error("Signup failed"));
+//         return;
+//       }
+//       resolve({
+//         userSub: result.userSub,
+//         username: result.user?.getUsername?.() || data.email,
+//         codeDeliveryDetails: result.codeDeliveryDetails,
+//         rawResult: result,
+//       });
+//     });
+//   });
+// };
+
 export const sendOtp = async (data: any, password?: string): Promise<SendOtpResponse> => {
   return new Promise((resolve, reject) => {
     const attributeList = buildAttributeList(data);
@@ -1596,10 +1640,32 @@ export const sendOtp = async (data: any, password?: string): Promise<SendOtpResp
           );
           return;
         }
+
+        // --- NEW SOLUTION STARTS HERE ---
         if (err.name === "UsernameExistsException") {
-          reject(new Error("An account with this email already exists. Please log in instead."));
-          return;
+          // If the user exists, try resending the confirmation code
+          const cognitoUser = new CognitoUser({ Username: data.email, Pool: userPool });
+          
+          cognitoUser.resendConfirmationCode((resendErr, resendResult) => {
+            if (resendErr) {
+              // If resend fails (e.g., the user is already fully verified), show the normal login error
+              reject(new Error("An account with this email already exists and is verified. Please log in instead."));
+              return;
+            }
+            
+            // If resend succeeds, the user was unverified. Resolve so the UI opens the OTP modal.
+            resolve({
+              userSub: "", // Not provided on resend, but not needed for the OTP UI
+              username: data.email,
+              codeDeliveryDetails: resendResult?.CodeDeliveryDetails,
+              rawResult: {} as ISignUpResult,
+            });
+          });
+          
+          return; // Stop execution here so it doesn't hit the default reject below
         }
+        // --- NEW SOLUTION ENDS HERE ---
+
         reject(new Error(friendlyCognitoMessage(err, "Something went wrong while registering. Please try again.")));
         return;
       }
