@@ -53,20 +53,12 @@ export default function Header({ onToggleSidebar, userData = { name: "Candidate"
 
       <div className="min-w-0">
         <div className="whitespace-nowrap font-display text-base font-semibold md:text-lg">Overview</div>
-        <div className="hidden text-xs text-slate-500 sm:block">Saturday, 1 August</div>
+       
+       
       </div>
 
-      <div className="relative ml-2 hidden max-w-[380px] flex-1 sm:block">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
-          <circle cx="11" cy="11" r="7" />
-          <line x1="21" y1="21" x2="16.6" y2="16.6" />
-        </svg>
-        <input
-          type="text"
-          placeholder="Search orders, customers…"
-          className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3.5 text-sm outline-none transition-colors focus:border-[#0076b6] focus:bg-white"
-        />
-      </div>
+      
+      
 
       {/* Profile Avatar Dropdown Area */}
       <div className="ml-auto flex items-center gap-2.5 relative" ref={dropdownRef}>
