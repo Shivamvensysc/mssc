@@ -107,7 +107,7 @@ export default function Dashboard() {
       {/* 4 CARDS SECTION */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard 
-          title="Total Applications" 
+          title="Total Registered Applications" 
           value={stats?.applications?.total || 0} 
           color="border-l-[#0076b6]" 
         />
@@ -121,11 +121,11 @@ export default function Dashboard() {
           value={stats?.applications?.draft || 0} 
           color="border-l-amber-500" 
         />
-        <StatCard 
+        {/* <StatCard 
           title="Total Candidates" 
           value={stats?.candidates?.total || 0} 
           color="border-l-purple-500" 
-        />
+        /> */}
       </div>
 
       {/* DYNAMIC EXAM CITY STATS SECTION */}
