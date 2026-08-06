@@ -7,6 +7,8 @@ import {
   User, 
   Lock, 
   RefreshCw, 
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -32,6 +34,9 @@ export default function AdminLoginPage() {
   const [isValidatingCaptcha, setIsValidatingCaptcha] = useState(false);
   const [captchaId, setCaptchaId] = useState<string>("");
   const [captchaSvg, setCaptchaSvg] = useState<string>("");
+  
+  // Added state for password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     staffId: "",
@@ -254,20 +259,26 @@ export default function AdminLoginPage() {
               <label className="text-[12px] font-bold text-[#475569] tracking-wide">
                 Password <span className="text-red-500">*</span>
               </label>
-              
-              
             </div>
             <div className="relative">
               <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 disabled={isLoading}
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full h-[42px] pl-10 pr-4 bg-white border border-[#CBD5E1] rounded-lg text-[13.5px] font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-[#003A2B] focus:border-[#003A2B] transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                className="w-full h-[42px] pl-10 pr-10 bg-white border border-[#CBD5E1] rounded-lg text-[13.5px] font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-[#003A2B] focus:border-[#003A2B] transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#003A2B] transition-colors focus:outline-none"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
@@ -351,12 +362,7 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-       
-       
-
       </div>
-
-     
 
     </div>
   );
