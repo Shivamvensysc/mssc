@@ -3259,7 +3259,21 @@ function Step4Review({
       <FormSection number={4} title="Teacher Eligibility">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {Object.entries(data.teacherEligibility).map(([key, val]) => {
+            // 1. ADD THIS LINE: Skip these specific document keys entirely
+            if (['tet1Cert', 'dedCert', 'tenPlusTwoCert'].includes(key)) return null;
+            
+            // 2. Keep your existing check to skip active File objects
             if (val instanceof File) return null;
+
+            // 3. Format Booleans properly (so tet1Passed shows "Yes" instead of "true")
+            let displayValue: string | number = '—';
+            
+            if (typeof val === 'boolean') {
+              displayValue = val ? 'Yes' : 'No';
+            } else if (val !== null && val !== undefined && val !== '') {
+              displayValue = String(val);
+            }
+            // if (val instanceof File) return null;
             return (
               <div key={key} className="flex flex-col">
                 <span className="text-xs font-bold mb-1" style={{ color: theme.textPrimary }}>
