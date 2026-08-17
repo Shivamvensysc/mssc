@@ -2224,6 +2224,7 @@ export async function generateApplicationPDF(
     ["EXAM CITY :", data.examCity],
     ["RESERVATION CATEGORY :", data.reservationCategory],
     // ["MANIPUR RESIDENT? :", data.manipurResident],
+    ["MANIPUR RESIDENT? :", "YES"],
     
     
   ];
