@@ -2223,7 +2223,7 @@ export async function generateApplicationPDF(
     ["DISTRICT :", data.district],
     ["EXAM CITY :", data.examCity],
     ["RESERVATION CATEGORY :", data.reservationCategory],
-    ["MANIPUR RESIDENT? :", data.manipurResident],
+    // ["MANIPUR RESIDENT? :", data.manipurResident],
     
     
   ];
