@@ -189,7 +189,7 @@ export const HomePage: React.FC = () => {
                 <div>
                   <span className="block text-blue-200">Closing Date for Submission:</span>
                   {/* Kept red for urgency/closing date */}
-                  <span className="text-sm font-semibold text-red-300">20/08/2026(05:00 PM)</span>
+                  <span className="text-sm font-semibold text-red-300">30/08/2026(05:00 PM)</span>
                 </div>
                 <div>
                   <span className="block text-blue-200">Exams Mode & Centres:</span>
