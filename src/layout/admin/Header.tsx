@@ -79,7 +79,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
           <div className="absolute right-0 top-full mt-1 w-56 max-w-[calc(100vw-1.5rem)] bg-white rounded-lg shadow-lg border border-slate-100 transition-all z-50 flex flex-col overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100">
               <p className="text-sm font-medium text-slate-900">Admin User</p>
-              <p className="text-xs text-slate-500 truncate">admin@mssc.com</p>
+              <p className="text-xs text-slate-500 truncate">admin@gmail.com</p>
             </div>
 
             <button
