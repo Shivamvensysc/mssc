@@ -7,11 +7,17 @@ import {
   ShieldCheck, 
   User, 
   Lock, 
+<<<<<<< HEAD
   RefreshCw,
   Eye,
   EyeOff,
   Users,
   Activity
+=======
+  RefreshCw, 
+  Eye,
+  EyeOff,
+>>>>>>> origin/main
 } from "lucide-react";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -38,7 +44,11 @@ export default function AdminLoginPage() {
   const [captchaId, setCaptchaId] = useState<string>("");
   const [captchaSvg, setCaptchaSvg] = useState<string>("");
   
+<<<<<<< HEAD
   // State for password visibility toggle
+=======
+  // Added state for password visibility
+>>>>>>> origin/main
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -255,6 +265,7 @@ export default function AdminLoginPage() {
             Seamlessly manage candidate applications, monitor real-time statistics, and oversee the recruitment lifecycle with enterprise-grade security.
           </p>
 
+<<<<<<< HEAD
           {/* Feature Modules */}
           <div className="space-y-3">
             <div className="group flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition-all hover:bg-white/10 hover:border-white/20">
@@ -265,6 +276,52 @@ export default function AdminLoginPage() {
                 <h4 className="text-white text-sm font-semibold tracking-wide">Candidate Management</h4>
                 <p className="text-blue-200/60 text-xs mt-0.5">Review & process applications efficiently</p>
               </div>
+=======
+          {/* PASSWORD FIELD */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <label className="text-[12px] font-bold text-[#475569] tracking-wide">
+                Password <span className="text-red-500">*</span>
+              </label>
+            </div>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                disabled={isLoading}
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full h-[42px] pl-10 pr-10 bg-white border border-[#CBD5E1] rounded-lg text-[13.5px] font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-[#003A2B] focus:border-[#003A2B] transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#003A2B] transition-colors focus:outline-none"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          {/* SECURITY VERIFICATION CAPTCHA BLOCK */}
+          <div className="space-y-1.5 bg-[#FAFBFB] p-3.5 border border-[#E2E8F0] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#64748B]">
+                Security Verification
+              </span>
+              <button 
+                type="button"
+                onClick={handleRefreshCaptcha}
+                disabled={captchaLoading || isLoading}
+                className="text-gray-400 hover:text-[#003A2B] transition-colors p-0.5 rounded disabled:opacity-40"
+                title="Refresh Captcha Code"
+              >
+                <RefreshCw size={13} className={captchaLoading ? "animate-spin" : ""} />
+              </button>
+>>>>>>> origin/main
             </div>
             
             <div className="group flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition-all hover:bg-white/10 hover:border-white/20">
@@ -277,6 +334,7 @@ export default function AdminLoginPage() {
               </div>
             </div>
           </div>
+<<<<<<< HEAD
         </div>
       </div>
 
@@ -439,6 +497,42 @@ export default function AdminLoginPage() {
           100% { transform: translateX(100%); }
         }
       `}</style>
+=======
+
+          {/* SUBMIT EXECUTIVE PORTAL ACCESS BUTTON WITH DYNAMIC SPINNER */}
+          <button
+            type="submit"
+            disabled={isLoading || isValidatingCaptcha}
+            className="w-full h-[44px] bg-[#003A2B] hover:bg-[#002B20] text-white rounded-lg font-bold text-[14px] flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all mt-2 disabled:bg-[#003A2B]/80 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Verifying Credentials...</span>
+              </>
+            ) : isValidatingCaptcha ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Validating CAPTCHA...</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck size={16} className="text-[#34D399]" /> 
+                <span>Secure Login</span>
+              </>
+            )}
+          </button>
+        </form>
+
+      </div>
+
+>>>>>>> origin/main
     </div>
   );
 }
