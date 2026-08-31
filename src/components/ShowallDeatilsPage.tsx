@@ -1043,7 +1043,7 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
       
       motherTongue: step0.motherTongue,
       citizenOfIndia: renderBoolean(step0.citizenOfIndia),
-      manipurResident: renderBoolean(step0.manipurResident),
+      manipurResident: "YES",
       
       identityType: titleCase(step0.identityType),
       identityNumber: step0.identityNumber,
@@ -1239,7 +1239,7 @@ export default function ShowallDeatilsPage({ applicationData }: { applicationDat
             <Field label="Father's Name" value={merged.fatherName} />
             <Field label="Mother's Name" value={merged.motherName} />
             <Field label="Nationality" value={merged.nationality} />
-            <Field label="Citizen of India" value={merged.citizenOfIndia} />
+            {/* <Field label="Citizen of India" value={merged.citizenOfIndia} /> */}
             <Field label="Manipur Resident" value={merged.manipurResident} />
             <Field label="Mother Tongue" value={merged.motherTongue} />
             <Field label="District" value={merged.district} />
