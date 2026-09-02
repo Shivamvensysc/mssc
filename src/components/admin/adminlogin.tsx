@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { signIn, fetchAuthSession, signOut } from "aws-amplify/auth";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { 
   ShieldCheck, 
   User, 
   Lock, 
-  RefreshCw, 
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Users,
+  Activity
 } from "lucide-react";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -32,6 +37,9 @@ export default function AdminLoginPage() {
   const [isValidatingCaptcha, setIsValidatingCaptcha] = useState(false);
   const [captchaId, setCaptchaId] = useState<string>("");
   const [captchaSvg, setCaptchaSvg] = useState<string>("");
+  
+  // State for password visibility toggle
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     staffId: "",
@@ -167,9 +175,12 @@ export default function AdminLoginPage() {
         localStorage.setItem("adminUsername", username);
         localStorage.setItem("adminEmail", userEmail);
 
-        toast.success("Login successful");
+        toast.success("Login successful! Redirecting...");
 
-        navigate("/admin");
+        // Delay navigation slightly so the Toast has time to render before the component unmounts
+        setTimeout(() => {
+          navigate("/admin");
+        }, 1500);
         return;
       }
 
@@ -205,159 +216,229 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F5F7] flex flex-col justify-between font-sans antialiased selection:bg-[#003A2B]/10 p-4">
+    // Changed from min-h-screen to min-h-[calc(100vh-5rem)] to account for the top navbar
+    <div className="min-h-[calc(100vh-5rem)] flex flex-col lg:flex-row bg-[#f8f9fa] font-sans antialiased overflow-hidden">
       
-      {/* Top Spacer to push center content down evenly */}
-      <div className="hidden sm:block h-6" />
-
-      {/* MAIN CARD CONTAINER */}
-      <div className="w-full max-w-[460px] mx-auto bg-white border border-[#E2E8F0] rounded-xl shadow-md p-6 sm:p-8 space-y-6 my-auto">
+      {/* LEFT SIDE: PREMIUM BRANDING PANEL */}
+      <div className="hidden lg:flex relative w-5/12 flex-col justify-center p-10 xl:p-14 bg-[#00476D]">
         
-        {/* BRAND IDENTITY HEADER */}
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-xl bg-[#003A2B] text-white flex items-center justify-center mx-auto shadow-inner">
-            <ShieldCheck size={24} className="text-[#34D399]" />
-          </div>
-          <h2 className="text-[22px] font-black tracking-tight text-[#0F172A]">
-            Administrative Login
-          </h2>
-          <p className="text-[12.5px] font-medium text-[#5F6368] leading-relaxed max-w-[340px] mx-auto">
-            Access restricted to authorized BSSC Officers and Administrative Personnel.
-          </p>
-        </div>
+        {/* Dynamic Background with SVG Grid and Glows */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#003554] to-[#006092]"></div>
+        
+        {/* Dot Matrix Pattern */}
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '36px 36px' }}></div>
+        
+        {/* Atmospheric Blur Effects */}
+        <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-[#00a8ff] rounded-full blur-[140px] opacity-30 pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#002B44] rounded-full blur-[120px] opacity-80 pointer-events-none"></div>
 
-        {/* INTERACTION LOGIN FORM */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Center Content - Typographic & Sleek (Moved up slightly) */}
+        <div className="relative z-10 w-full max-w-md mx-auto -mt-10">
           
-          {/* STAFF ID / USERNAME FIELD */}
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-bold text-[#475569] tracking-wide block">
-              Staff ID / Username <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                required
-                disabled={isLoading}
-                placeholder="e.g., JSSC-OFF-102"
-                value={formData.staffId}
-                onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
-                className="w-full h-[42px] pl-10 pr-4 bg-white border border-[#CBD5E1] rounded-lg text-[13.5px] font-medium placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003A2B] focus:border-[#003A2B] transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
-            </div>
+          {/* Live Status Pill */}
+          <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-widest uppercase mb-5 shadow-[0_0_15px_rgba(52,211,153,0.1)]">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            System Online
           </div>
+          
+          <h2 className="text-4xl xl:text-5xl font-extrabold text-white leading-[1.15] tracking-tight mb-5">
+            Centralized <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#60a5fa] to-[#93c5fd]">
+              Command Center
+            </span>
+          </h2>
+          
+          <p className="text-blue-100/70 text-sm leading-relaxed mb-8 max-w-sm">
+            Seamlessly manage candidate applications, monitor real-time statistics, and oversee the recruitment lifecycle with enterprise-grade security.
+          </p>
 
-          {/* PASSWORD FIELD */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <label className="text-[12px] font-bold text-[#475569] tracking-wide">
-                Password <span className="text-red-500">*</span>
-              </label>
-              
-              
-            </div>
-            <div className="relative">
-              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="password"
-                required
-                disabled={isLoading}
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full h-[42px] pl-10 pr-4 bg-white border border-[#CBD5E1] rounded-lg text-[13.5px] font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-[#003A2B] focus:border-[#003A2B] transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
-              />
-            </div>
-          </div>
-
-          {/* SECURITY VERIFICATION CAPTCHA BLOCK */}
-          <div className="space-y-1.5 bg-[#FAFBFB] p-3.5 border border-[#E2E8F0] rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-[#64748B]">
-                Security Verification
-              </span>
-              <button 
-                type="button"
-                onClick={handleRefreshCaptcha}
-                disabled={captchaLoading || isLoading}
-                className="text-gray-400 hover:text-[#003A2B] transition-colors p-0.5 rounded disabled:opacity-40"
-                title="Refresh Captcha Code"
-              >
-                <RefreshCw size={13} className={captchaLoading ? "animate-spin" : ""} />
-              </button>
+          {/* Feature Modules */}
+          <div className="space-y-3">
+            <div className="group flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition-all hover:bg-white/10 hover:border-white/20">
+              <div className="bg-blue-500/20 p-2.5 rounded-xl border border-blue-500/30 group-hover:scale-110 transition-transform">
+                <Users className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h4 className="text-white text-sm font-semibold tracking-wide">Candidate Management</h4>
+                <p className="text-blue-200/60 text-xs mt-0.5">Review & process applications efficiently</p>
+              </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              {/* CAPTCHA SVG Display */}
-              <div 
-                className="h-[40px] px-5 bg-white border border-[#CBD5E1] rounded-md flex items-center justify-center select-none shadow-sm flex-1 overflow-hidden"
-              >
-                {captchaLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#003A2B] border-t-transparent"></div>
-                  </div>
-                ) : captchaSvg ? (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: captchaSvg }}
-                    className="w-full flex items-center justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-h-[30px]"
-                  />
-                ) : (
-                  <span className="text-[12px] text-gray-400">Loading CAPTCHA...</span>
-                )}
+            <div className="group flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition-all hover:bg-white/10 hover:border-white/20">
+              <div className="bg-purple-500/20 p-2.5 rounded-xl border border-purple-500/30 group-hover:scale-110 transition-transform">
+                <Activity className="w-5 h-5 text-purple-400" />
               </div>
-              
-              <input
-                type="text"
-                required
-                disabled={isLoading || isValidatingCaptcha}
-                placeholder="Enter code"
-                value={formData.captcha}
-                onChange={(e) => setFormData({ ...formData, captcha: e.target.value })}
-                className="w-[120px] h-[40px] px-3 bg-white border border-[#CBD5E1] rounded-md text-[13.5px] font-bold text-center placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:ring-1 focus:ring-[#003A2B] focus:border-[#003A2B] transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
-                maxLength={6}
-              />
+              <div>
+                <h4 className="text-white text-sm font-semibold tracking-wide">Real-time Analytics</h4>
+                <p className="text-blue-200/60 text-xs mt-0.5">Live tracking and recruitment insights</p>
+              </div>
             </div>
           </div>
-
-          {/* SUBMIT EXECUTIVE PORTAL ACCESS BUTTON WITH DYNAMIC SPINNER */}
-          <button
-            type="submit"
-            disabled={isLoading || isValidatingCaptcha}
-            className="w-full h-[44px] bg-[#003A2B] hover:bg-[#002B20] text-white rounded-lg font-bold text-[14px] flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all mt-2 disabled:bg-[#003A2B]/80 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Verifying Credentials...</span>
-              </>
-            ) : isValidatingCaptcha ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Validating CAPTCHA...</span>
-              </>
-            ) : (
-              <>
-                <ShieldCheck size={16} className="text-[#34D399]" /> 
-                <span>Secure Login</span>
-              </>
-            )}
-          </button>
-        </form>
-
-       
-       
-
+        </div>
       </div>
 
-     
+      {/* RIGHT SIDE: LOGIN FORM */}
+      {/* Added lg:-mt-12 to shift the card up on desktop screens */}
+      <div className="w-full lg:w-7/12 flex items-center justify-center p-4 sm:p-8 relative lg:-mt-8">
+        
+        {/* Mobile-only gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00476D] to-[#0076b6] lg:hidden -z-10"></div>
 
+        {/* LOGIN CARD - Compacted paddings and margins */}
+        <div className="w-full max-w-[420px] bg-white rounded-[2rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] lg:shadow-2xl border border-slate-100 p-8 sm:p-10 space-y-6 relative overflow-hidden">
+          
+          {/* Subtle top border accent */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#0076b6] to-[#00476D]"></div>
+
+          {/* Header */}
+          <div className="space-y-1.5">
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              Welcome back
+            </h2>
+            <p className="text-sm font-medium text-slate-500">
+              Enter your administrative credentials to access the dashboard.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            
+            {/* STAFF ID / USERNAME */}
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-bold text-slate-700 tracking-wide block">
+                Staff ID / Username <span className="text-red-500">*</span>
+              </label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-slate-400 group-focus-within:text-[#0076b6] transition-colors duration-300">
+                  <User size={18} strokeWidth={2.5} />
+                </div>
+                <input
+                  type="text"
+                  required
+                  disabled={isLoading}
+                  placeholder="e.g., ADMIN-102"
+                  value={formData.staffId}
+                  onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
+                  className="w-full h-11 pl-11 pr-4 bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0076b6]/20 focus:border-[#0076b6] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* PASSWORD */}
+            <div className="space-y-1.5">
+              <label className="text-[13px] font-bold text-slate-700 tracking-wide block">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-slate-400 group-focus-within:text-[#0076b6] transition-colors duration-300">
+                  <Lock size={18} strokeWidth={2.5} />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  disabled={isLoading}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full h-11 pl-11 pr-12 bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0076b6]/20 focus:border-[#0076b6] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center p-1.5 text-slate-400 hover:text-[#0076b6] transition-colors focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* HIGH-SECURITY CAPTCHA BLOCK */}
+            <div className="relative pt-2">
+              <div className="absolute -top-1 left-3 px-2 bg-white text-[10px] font-bold uppercase tracking-widest text-slate-400 z-10">
+                Security Verification
+              </div>
+              <div className="bg-white border-2 border-dashed border-slate-200 rounded-xl p-3.5 hover:border-[#0076b6]/30 transition-colors">
+                <div className="flex flex-col sm:flex-row items-stretch gap-3">
+                  
+                  {/* CAPTCHA Display */}
+                  <div className="relative h-11 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center select-none shadow-inner flex-1 overflow-hidden group">
+                    {captchaLoading ? (
+                      <RefreshCw className="w-5 h-5 animate-spin text-[#0076b6]" />
+                    ) : captchaSvg ? (
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: captchaSvg }}
+                        className="w-full flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-h-[30px]"
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-400">Loading...</span>
+                    )}
+                    
+                    {/* Refresh Button overlaid on top right of captcha image */}
+                    <button 
+                      type="button"
+                      onClick={handleRefreshCaptcha}
+                      disabled={captchaLoading || isLoading}
+                      className="absolute top-1 right-1 p-1 bg-white/80 hover:bg-white text-slate-400 hover:text-[#0076b6] rounded-md shadow-sm backdrop-blur-sm transition-all disabled:opacity-40"
+                      title="Refresh Captcha Code"
+                    >
+                      <RefreshCw size={12} className={captchaLoading ? "animate-spin" : ""} />
+                    </button>
+                  </div>
+                  
+                  {/* CAPTCHA Input */}
+                  <input
+                    type="text"
+                    required
+                    disabled={isLoading || isValidatingCaptcha}
+                    placeholder="Code"
+                    value={formData.captcha}
+                    onChange={(e) => setFormData({ ...formData, captcha: e.target.value })}
+                    className="w-full sm:w-[120px] h-11 px-3 bg-white border-2 border-slate-200 rounded-lg text-sm font-bold tracking-widest text-center text-slate-700 placeholder:text-slate-300 placeholder:tracking-normal placeholder:font-normal focus:outline-none focus:border-[#0076b6] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    maxLength={6}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SUBMIT BUTTON */}
+            <button
+              type="submit"
+              disabled={isLoading || isValidatingCaptcha}
+              className="relative w-full h-11 bg-gradient-to-r from-[#00476D] to-[#0076b6] hover:from-[#003d5e] hover:to-[#006092] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#0076b6]/25 hover:shadow-xl hover:shadow-[#0076b6]/40 transform transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0 disabled:cursor-not-allowed overflow-hidden group mt-2"
+            >
+              {/* Shine effect on hover */}
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]"></div>
+              
+              {isLoading || isValidatingCaptcha ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white/90" />
+                  <span>{isLoading ? "Authenticating..." : "Validating..."}</span>
+                </>
+              ) : (
+                <>
+                  <span>Access Dashboard</span>
+                  <ShieldCheck size={16} className="text-emerald-300" /> 
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+      </div>
+      
+      {/* Toast Notification Container */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+
+      {/* Shimmer animation keyframes for button */}
+      <style>{`
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 }
