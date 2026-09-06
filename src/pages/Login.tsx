@@ -440,18 +440,18 @@ export function LoginPage() {
                 </button>
               </form>
 
-              <div className="my-4 flex items-center gap-4">
+              {/* <div className="my-4 flex items-center gap-4">
                 <div className="flex-grow h-px bg-slate-200"></div>
                 <span className="font-label-sm text-[11px] text-slate-400 uppercase tracking-wider font-bold">or</span>
                 <div className="flex-grow h-px bg-slate-200"></div>
-              </div>
+              </div> */}
 
-              <div className="mt-4 text-center">
+              {/* <div className="mt-4 text-center">
                 <p className="font-body-md text-sm text-slate-600">
                   Don't have an account? 
                   <Link to="/register" className="text-[#0076b6] font-bold hover:underline ml-1">Register</Link>
                 </p>
-              </div>
+              </div> */}
             </div>
           ) : (
             /* -------- FORGOT PASSWORD CARD -------- */

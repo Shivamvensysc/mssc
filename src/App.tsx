@@ -61,6 +61,7 @@ const CandidateDashboard = lazy(() => import('./pages/CandidateDashboard'));
 const AdminLayout = lazy(() => import('./layout/admin/Layout'));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const UserDetails = lazy(() => import("./pages/UserDetails"));
+const NotFoundPage = lazy(()=> import("./pages/NotFoundPage"))
 
 // 2. Lazy load components with NAMED exports using .then()
 const HomePage = lazy(() => import("./pages/HomePage").then(module => ({ default: module.HomePage })));
@@ -100,6 +101,8 @@ function App() {
             <Route index element={<CandidateDashboard />} />
             <Route path="application" element={<ApplicationForm />} />
           </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
