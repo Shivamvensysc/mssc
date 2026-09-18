@@ -902,6 +902,7 @@ export default function UserDetails() {
   // Extract Teacher Eligibility and Work Experience
   const teacherEligibility = personalExt.teachereligibilit || personalExt.teachereligibility;
   const experience = personalExt.experience;
+  const sponsorNo = personalExt.personalInfo?.sponsorNo || personalExt.sponsorNo || appData.personalInfo?.sponsorNo;
 
   // Format Qualifications from the `education` object into an array for the table
   const rawEducation = personalExt.education || {};
@@ -1068,6 +1069,7 @@ export default function UserDetails() {
              <SectionCard title="Teacher Eligibility" icon={<Award className="w-5 h-5 text-[#0076b6]"/>}>
                {teacherEligibility && Object.keys(teacherEligibility).length > 0 ? (
                  <div className="space-y-4">
+                  <DetailRow label="Sponsor No" value={sponsorNo} copyable />
                    <DetailRow label="RCI Number" value={teacherEligibility.rciNumber} />
                    <DetailRow label="D.Ed Qualification" value={teacherEligibility.dedQual} />
                    <DetailRow label="Institution" value={teacherEligibility.dedInstitution} />
